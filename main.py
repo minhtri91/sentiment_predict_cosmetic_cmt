@@ -122,7 +122,6 @@ if info_options == 'Tổng quan về dataset':
         # Chuyển dạng dữ liệu biến 'ngay_binh_luan' sang biến datetime
         # Dữ liệu thời gian bất thường.
         data = data.drop(data[data['ngay_binh_luan'] == '30/11/-0001'].index)
-        
         data['ngay_binh_luan'] = pd.to_datetime(data['ngay_binh_luan'], format='%Y-%m-%d')
         data['quarter'] = data['ngay_binh_luan'].dt.to_period('Q').astype(str)
         comment_count_quarter = data.groupby('quarter').size().reset_index()
@@ -183,7 +182,8 @@ if info_options == 'Thông tin về sản phẩm':
     else:
         st.write('## Truy suất thông tin về một sản phẩm bất kỳ')
         data = st.session_state['uploaded_data']  # Lấy dữ liệu từ session_state
-        
+        data = data.drop(data[data['ngay_binh_luan'] == '30/11/-0001'].index)
+        data['ngay_binh_luan'] = pd.to_datetime(data['ngay_binh_luan'], format='%Y-%m-%d')
         # Lấy sản phẩm
         data_info = data[['ho_ten', 'ma_san_pham', 'ten_san_pham', 'mo_ta', 'diem_trung_binh', 'gia_ban', 'processed_noi_dung_binh_luan', 'ngay_binh_luan']]
         random_products = data_info.drop_duplicates(subset='ma_san_pham')
