@@ -121,8 +121,9 @@ if info_options == 'Tổng quan về dataset':
         # Tạo cột 'quarter' (quý) từ cột 'ngay_binh_luan'
         # Chuyển dạng dữ liệu biến 'ngay_binh_luan' sang biến datetime
         # Dữ liệu thời gian bất thường.
-        data.drop(data[data['ngay_binh_luan'] == '30/11/-0001'].index, inplace=True)
-        data['ngay_binh_luan'] = pd.to_datetime(data['ngay_binh_luan'], format='%Y/%m/%d')
+        data = data.drop(data[data['ngay_binh_luan'] == '30/11/-0001'].index)
+        
+        data['ngay_binh_luan'] = pd.to_datetime(data['ngay_binh_luan'], format='%Y-%m-%d')
         data['quarter'] = data['ngay_binh_luan'].dt.to_period('Q').astype(str)
         comment_count_quarter = data.groupby('quarter').size().reset_index()
         comment_count_quarter.rename(columns={0: 'so_luong_binh_luan_quy'}, inplace=True)
