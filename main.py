@@ -63,6 +63,12 @@ if info_options == 'Tổng quan về hệ thống':
     st.image('img/hasaki_logo.png', use_column_width=True)
     st.header('Quy trình triển khai hệ thống')
     st.image('img/Gioi_thieu_proj1.PNG', use_column_width=True)
+    st.write('''HASAKI.VN là hệ thống cửa hàng mỹ phẩm chính hãng và dịch vụ chăm sóc sắc đẹp chuyên sâu với hệ thống cửa hàng trải dài trên toàn quốc; và hiện đang là đối tác phân phối chiến lược tại thị trường Việt Nam của hàng loạt thương hiệu lớn...”
+
+Khách hàng có thể vào website hasaki.vn để tìm kiếm, lựa chọn sản phẩm, xem các đánh giá/nhận xét và đặt mua sản phẩm.
+
+Từ những đánh giá của khách hàng, vấn đề được đưa ra là làm sao để các nhãn hàng hiểu khách hàng rõ hơn, biết họ đánh giá gì về sản phẩm, từ đó có thể cải thiện chất lượng sản phẩm cũng như các dịch vụ đi kèm.
+''')
 
 ## Xem dữ liệu đã upload lên, đưa dữ liệu vào session để sử dụng lại được
 if info_options == 'Tải dữ liệu lên hệ thống':
