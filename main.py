@@ -29,23 +29,41 @@ negative_words_lst: list = tpr.load_words(file_path='files/hasaki_negative_words
 # Load model và TF-IDF vectorizer
 @st.cache_resource
 def load_model_and_tfidf():
-    model = evaluation.Load_Object('proj1_sentiment_lgr_model.pkl')
-    tfidf_vectorizer = evaluation.Load_Object('proj1_tfidf_vectorizer.pkl')
+    model = evaluation.Load_Object('models/proj1_sentiment_lgr_model.pkl')
+    tfidf_vectorizer = evaluation.Load_Object('models/proj1_tfidf_vectorizer.pkl')
     return model, tfidf_vectorizer
 
 # Load model và tfidf
 proj1_sentiment_lgr_model, proj1_tfidf_vectorizer = load_model_and_tfidf()
 
 # Giao diện phần 'Tải dữ liệu lên hệ thống'
-st.sidebar.title('Menu các chức năng:')
+st.sidebar.title('Menu:')
 info_options = st.sidebar.radio(
-    'Các chức năng', 
-    options=['Tải dữ liệu lên hệ thống', 'Tổng quan về dataset', 'Thông tin về sản phẩm', 'Dự báo thái độ cho dataset', 'Dự báo thái độ cho comment']
+    'Các chức năng :robot_face:', 
+    options=['Tổng quan về hệ thống', 'Tải dữ liệu lên hệ thống', 'Tổng quan về dataset', 'Thông tin về sản phẩm', 'Dự báo thái độ cho dataset', 'Dự báo thái độ cho comment']
 )
+st.sidebar.write('-'*3)
+st.sidebar.write('#### :star: Giảng viên hướng dẫn:')
+st.sidebar.write(':female-teacher: Thạc Sỹ Khuất Thùy Phương')
+st.sidebar.write('-'*3)
+st.sidebar.write('#### Nhóm cùng thực hiện:')
+st.sidebar.write(' :boy: Nguyễn Minh Trí')
+st.sidebar.write(' :boy: Võ Huy Quốc')
+st.sidebar.write(' :boy: Phan Trần Minh Khuê')
+st.sidebar.write('-'*3)
+st.sidebar.write('#### :clock830: Thời gian thực hiện:')
+st.sidebar.write(':spiral_calendar_pad: 14/12/2024')
 
 ## Kiểm tra dữ liệu đã upload trước đó
 if 'uploaded_data' not in st.session_state:
     st.session_state['uploaded_data'] = None  # Khởi tạo nếu chưa có dữ liệu
+    
+## Các bước thực hiện
+if info_options == 'Tổng quan về hệ thống':
+    st.image('img/hasaki_logo.png', use_column_width=True)
+    st.header('Quy trình triển khai hệ thống')
+    st.image('img/Gioi_thieu_proj1.PNG', use_column_width=True)
+
 ## Xem dữ liệu đã upload lên, đưa dữ liệu vào session để sử dụng lại được
 if info_options == 'Tải dữ liệu lên hệ thống':
     st.image('img/hasaki_logo.png', use_column_width=True)
@@ -58,15 +76,19 @@ if info_options == 'Tải dữ liệu lên hệ thống':
         if uploaded_file is not None:
             # Đọc file CSV và lưu vào session_state
             data = pd.read_csv(uploaded_file)
+            data = data.drop(data[data['ngay_binh_luan'] == '30/11/-0001'].index)
+            data['ngay_binh_luan'] = pd.to_datetime(data['ngay_binh_luan'], format='%Y-%m-%d')
+            data['quarter'] = data['ngay_binh_luan'].dt.to_period('Q').astype(str)
             st.session_state['uploaded_data'] = data
             st.write('-'*3)
             st.success('Dữ liệu đã được tải lên!')
-            st.dataframe(data[['ma_khach_hang', 'ho_ten', 'ma_san_pham', 'ten_san_pham', 'mo_ta', 'diem_trung_binh', 'so_sao', 'noi_dung_binh_luan', 'ngay_binh_luan', 'gia_ban']].head(5))  
+            st.dataframe(data[['ma_khach_hang', 'ho_ten', 'ma_san_pham', 'ten_san_pham', 'mo_ta', 'diem_trung_binh', 'so_sao', 'noi_dung_binh_luan', 'ngay_binh_luan', 'gia_ban']].head(5))
+            st.dataframe(data[['ma_khach_hang', 'ho_ten', 'ma_san_pham', 'ten_san_pham', 'mo_ta', 'diem_trung_binh', 'so_sao', 'noi_dung_binh_luan', 'ngay_binh_luan', 'gia_ban']].tail(5))  
     else:
         st.info('Dữ liệu đã được tải lên trước đó.')
         data = st.session_state['uploaded_data']  # Lấy dữ liệu từ session_state
-        st.dataframe(data[['ma_khach_hang', 'ho_ten', 'ma_san_pham', 'ten_san_pham', 'mo_ta', 'diem_trung_binh', 'so_sao', 'noi_dung_binh_luan', 'ngay_binh_luan', 'gia_ban']].head(5))      
-
+        st.dataframe(data[['ma_khach_hang', 'ho_ten', 'ma_san_pham', 'ten_san_pham', 'mo_ta', 'diem_trung_binh', 'so_sao', 'noi_dung_binh_luan', 'ngay_binh_luan', 'gia_ban']].head(5))
+        st.dataframe(data[['ma_khach_hang', 'ho_ten', 'ma_san_pham', 'ten_san_pham', 'mo_ta', 'diem_trung_binh', 'so_sao', 'noi_dung_binh_luan', 'ngay_binh_luan', 'gia_ban']].tail(5))
 # Giao diện phần 'Tổng quan về dataset'
 if info_options == 'Tổng quan về dataset':
     st.image('img/hasaki_logo.png', use_column_width=True)
@@ -122,9 +144,9 @@ if info_options == 'Tổng quan về dataset':
         # Tạo cột 'quarter' (quý) từ cột 'ngay_binh_luan'
         # Chuyển dạng dữ liệu biến 'ngay_binh_luan' sang biến datetime
         # Dữ liệu thời gian bất thường.
-        data = data.drop(data[data['ngay_binh_luan'] == '30/11/-0001'].index)
-        data['ngay_binh_luan'] = pd.to_datetime(data['ngay_binh_luan'], format='%Y-%m-%d')
-        data['quarter'] = data['ngay_binh_luan'].dt.to_period('Q').astype(str)
+        # data = data.drop(data[data['ngay_binh_luan'] == '30/11/-0001'].index)
+        # data['ngay_binh_luan'] = pd.to_datetime(data['ngay_binh_luan'], format='%Y-%m-%d')
+        # data['quarter'] = data['ngay_binh_luan'].dt.to_period('Q').astype(str)
         comment_count_quarter = data.groupby('quarter').size().reset_index()
         comment_count_quarter.rename(columns={0: 'so_luong_binh_luan_quy'}, inplace=True)
         st.write("### Thống kê số lượng bình luận theo quý")
@@ -183,8 +205,9 @@ if info_options == 'Thông tin về sản phẩm':
     else:
         st.write('## Truy suất thông tin về một sản phẩm bất kỳ')
         data = st.session_state['uploaded_data']  # Lấy dữ liệu từ session_state
-        data = data.drop(data[data['ngay_binh_luan'] == '30/11/-0001'].index)
-        data['ngay_binh_luan'] = pd.to_datetime(data['ngay_binh_luan'], format='%Y-%m-%d')
+        # data = data.drop(data[data['ngay_binh_luan'] == '30/11/-0001'].index)
+        # data['ngay_binh_luan'] = pd.to_datetime(data['ngay_binh_luan'], format='%Y-%m-%d')
+        
         # Lấy sản phẩm
         data_info = data[['ho_ten', 'ma_san_pham', 'ten_san_pham', 'mo_ta', 'diem_trung_binh', 'gia_ban', 'processed_noi_dung_binh_luan', 'ngay_binh_luan']]
         random_products = data_info.drop_duplicates(subset='ma_san_pham')
@@ -269,7 +292,7 @@ if info_options == 'Thông tin về sản phẩm':
                             ax.axis("off")
                             st.pyplot(fig)
                     with col2:
-                        st.write('##### Wordcloud tích cực')
+                        st.write('##### Wordcloud tiêu cực')
 
                         # Lấy giá trị đầu tiên từ mảng và xử lý các từ đặc biệt
                         negative_bowl = filtered_product['negative_words'].to_numpy()[0]
@@ -291,7 +314,7 @@ if info_options == 'Thông tin về sản phẩm':
                                 height=400,
                                 max_words=25,
                                 background_color='white',
-                                colormap='viridis',
+                                colormap='Oranges',
                                 collocations=False
                             ).generate(negative_bowl)
 
@@ -321,7 +344,7 @@ if info_options == 'Dự báo thái độ cho dataset':
                 st.write('Dữ liệu ban đầu:')
                 st.dataframe(data[['so_sao', 'noi_dung_binh_luan']].head(5))
                 st.dataframe(data[['so_sao', 'noi_dung_binh_luan']].tail(5))
-                if st.button('Dự đoán Sentiment'):
+                if st.button('Dự đoán thái độ các bình luận trong dataset'):
                     with st.spinner('Đang xử lý...'):
                         X_test = tpr.sentiment_predict(data, text_col_name='processed_noi_dung_binh_luan', trained_tfidf=proj1_tfidf_vectorizer)
                         y_pred = proj1_sentiment_lgr_model.predict(X_test)
@@ -388,7 +411,7 @@ if info_options == 'Dự báo thái độ cho comment':
                     X_test = tpr.sentiment_predict(input_df, text_col_name='noi_dung_binh_luan_special_words_remove_stopword', trained_tfidf=proj1_tfidf_vectorizer)
                     y_pred = proj1_sentiment_lgr_model.predict(X_test)[0]
                     input_df['label_pred'] = y_pred
-                    input_df['Dự báo thái độ bình luận'] = input_df['label_pred'].apply(lambda txt: 'positive' if txt == 1 else 'negative')
+                    input_df['Dự báo thái độ bình luận'] = input_df['label_pred'].apply(lambda txt: '**Positive**' if txt == 1 else '***Negative***')
                     st.success('Dự đoán hoàn tất!')
                     st.write('Nội dung bình luận có khả năng:', input_df['Dự báo thái độ bình luận'][0])
                     
