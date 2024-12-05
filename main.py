@@ -226,8 +226,9 @@ if info_options == 'Thông tin về sản phẩm':
                     st.write(product_description.replace('THÔNG TIN SẢN PHẨM','').replace('Làm sao để phân biệt hàng có trộn hay không ?\nHàng trộn sẽ không thể xuất hoá đơn đỏ (VAT) 100% được do có hàng không nguồn gốc trong đó.\nTại Hasaki, 100% hàng bán ra sẽ được xuất hoá đơn đỏ cho dù khách hàng có lấy hay không. Nếu có nhu cầu lấy hoá đơn đỏ, quý khách vui lòng lấy trước 22h cùng ngày. Vì sau 22h, hệ thống Hasaki sẽ tự động xuất hết hoá đơn cho những hàng hoá mà khách hàng không đăng kí lấy hoá đơn.\nDo xuất được hoá đơn đỏ 100% nên đảm bảo 100% hàng tại Hasaki là hàng chính hãng có nguồn gốc rõ ràng.',''))
                 with info_tabs[1]:
                     for i in range(len(selected_product["noi_dung_binh_luan"])):
-                        st.write(f'{selected_product["ngay_binh_luan"].dt.strftime("%d-%m-%Y").values[i]}, {selected_product["ho_ten"].values[i]}, {selected_product["so_sao"].values[i]} :star:')
+                        st.write(f'{selected_product["ngay_binh_luan"].dt.strftime("%d-%m-%Y").values[i]}, {selected_product["ho_ten"].values[i]}, {selected_product["so_sao"].values[i]*":star:"}')
                         st.write(f'{selected_product["noi_dung_binh_luan"].values[i]}')
+                        st.write('-'*3)
                 with info_tabs[2]:
                     filtered_product = selected_product.groupby('ma_san_pham')['processed_noi_dung_binh_luan'].apply(' '.join).reset_index()
                     filtered_product.rename(columns={"processed_noi_dung_binh_luan": "merged_comments"}, inplace=True)
@@ -236,8 +237,10 @@ if info_options == 'Thông tin về sản phẩm':
                     col1, col2 = st.columns(2)
                     with col1:
                         st.write('##### Wordcloud tích cực')
-                        positive_bowl = filtered_product['positive_words'].to_numpy()[0]  # Lấy giá trị đầu tiên từ mảng
-                        positive_bowl = tpr.process_special_word(positive_bowl)  # Xử lý các từ đặc biệt
+
+                        # Lấy giá trị đầu tiên từ mảng và xử lý các từ đặc biệt
+                        positive_bowl = filtered_product['positive_words'].to_numpy()[0]
+                        positive_bowl = tpr.process_special_word(positive_bowl)
 
                         # Đảm bảo positive_bowl là một chuỗi hợp lệ
                         if isinstance(positive_bowl, list):  # Nếu đầu ra là danh sách, nối các từ lại thành chuỗi
@@ -245,25 +248,31 @@ if info_options == 'Thông tin về sản phẩm':
                         elif not isinstance(positive_bowl, str):  # Nếu không phải chuỗi, chuyển đổi về chuỗi
                             positive_bowl = str(positive_bowl)
 
-                        # Tạo positive WordCloud
-                        positive_wordcloud = wc(
-                            width=800,
-                            height=400,
-                            max_words=25,
-                            background_color='white',
-                            colormap='viridis',
-                            collocations=False
-                        ).generate(positive_bowl)
+                        # Kiểm tra nếu không có chữ nào để tạo Wordcloud
+                        if not positive_bowl.strip():  # .strip() để loại bỏ khoảng trắng
+                            st.warning('Hiện tại chưa có chữ để trích xuất Wordcloud')
+                        else:
+                            # Tạo positive WordCloud
+                            positive_wordcloud = wc(
+                                width=800,
+                                height=400,
+                                max_words=25,
+                                background_color='white',
+                                colormap='viridis',
+                                collocations=False
+                            ).generate(positive_bowl)
 
-                        # Hiển thị positive WordCloud trong Streamlit
-                        fig, ax = plt.subplots(figsize=(10, 6))
-                        ax.imshow(positive_wordcloud, interpolation='bilinear')
-                        ax.axis("off")
-                        st.pyplot(fig)  
+                            # Hiển thị positive WordCloud trong Streamlit
+                            fig, ax = plt.subplots(figsize=(10, 6))
+                            ax.imshow(positive_wordcloud, interpolation='bilinear')
+                            ax.axis("off")
+                            st.pyplot(fig)
                     with col2:
-                        st.write('##### Wordcloud tiêu cực')
-                        negative_bowl = filtered_product['negative_words'].to_numpy()[0]  # Lấy giá trị đầu tiên từ mảng
-                        negative_bowl = tpr.process_special_word(negative_bowl)  # Xử lý các từ đặc biệt
+                        st.write('##### Wordcloud tích cực')
+
+                        # Lấy giá trị đầu tiên từ mảng và xử lý các từ đặc biệt
+                        negative_bowl = filtered_product['negative_words'].to_numpy()[0]
+                        negative_bowl = tpr.process_special_word(negative_bowl)
 
                         # Đảm bảo negative_bowl là một chuỗi hợp lệ
                         if isinstance(negative_bowl, list):  # Nếu đầu ra là danh sách, nối các từ lại thành chuỗi
@@ -271,22 +280,25 @@ if info_options == 'Thông tin về sản phẩm':
                         elif not isinstance(negative_bowl, str):  # Nếu không phải chuỗi, chuyển đổi về chuỗi
                             negative_bowl = str(negative_bowl)
 
-                        # Tạo positive WordCloud
-                        negative_wordcloud = wc(
-                            width=800,
-                            height=400,
-                            max_words=25,
-                            background_color='white',
-                            colormap='Oranges',
-                            collocations=False
-                        ).generate(negative_bowl)
+                        # Kiểm tra nếu không có chữ nào để tạo Wordcloud
+                        if not negative_bowl.strip():  # .strip() để loại bỏ khoảng trắng
+                            st.warning('Hiện tại chưa có chữ để trích xuất Wordcloud')
+                        else:
+                            # Tạo negative WordCloud
+                            negative_wordcloud = wc(
+                                width=800,
+                                height=400,
+                                max_words=25,
+                                background_color='white',
+                                colormap='viridis',
+                                collocations=False
+                            ).generate(negative_bowl)
 
-                        # Hiển thị positive WordCloud trong Streamlit
-                        fig, ax = plt.subplots(figsize=(10, 6))
-                        ax.imshow(negative_wordcloud, interpolation='bilinear')
-                        ax.axis("off")
-                        st.pyplot(fig)  
-
+                            # Hiển thị negative WordCloud trong Streamlit
+                            fig, ax = plt.subplots(figsize=(10, 6))
+                            ax.imshow(negative_wordcloud, interpolation='bilinear')
+                            ax.axis("off")
+                            st.pyplot(fig)
         else:
             st.write(f"Không tìm thấy sản phẩm với ID: {st.session_state.selected_ma_san_pham}")
         
