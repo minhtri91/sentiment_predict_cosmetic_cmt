@@ -59,8 +59,9 @@ if info_options == 'Tải dữ liệu lên hệ thống':
             # Đọc file CSV và lưu vào session_state
             data = pd.read_csv(uploaded_file)
             st.session_state['uploaded_data'] = data
-            st.dataframe(data[['ma_khach_hang', 'ho_ten', 'ma_san_pham', 'ten_san_pham', 'mo_ta', 'diem_trung_binh', 'so_sao', 'noi_dung_binh_luan', 'ngay_binh_luan', 'gia_ban']].head(5))
+            st.write('-'*3)
             st.success('Dữ liệu đã được tải lên!')
+            st.dataframe(data[['ma_khach_hang', 'ho_ten', 'ma_san_pham', 'ten_san_pham', 'mo_ta', 'diem_trung_binh', 'so_sao', 'noi_dung_binh_luan', 'ngay_binh_luan', 'gia_ban']].head(5))  
     else:
         st.info('Dữ liệu đã được tải lên trước đó.')
         data = st.session_state['uploaded_data']  # Lấy dữ liệu từ session_state
@@ -215,7 +216,7 @@ if info_options == 'Thông tin về sản phẩm':
             selected_product = data[data['ma_san_pham'] == st.session_state.selected_ma_san_pham].sort_values(by='ngay_binh_luan', ascending=False)
 
             if not selected_product.empty:
-                # st.write('#### Bạn vừa chọn:')
+                st.write('-'*3)
                 st.write(f'#### {selected_product["ten_san_pham"].values[0]}')
                 st.write(f'### {selected_product["diem_trung_binh"].values[0]} :star:', '{:,.0f}'.format(selected_product["gia_ban"].values[0]),'VNĐ')
                 product_description = selected_product['mo_ta'].values[0]
@@ -312,23 +313,35 @@ if info_options == 'Dự báo thái độ cho dataset':
         # Tabs chính
         model_tabs = st.tabs(['Dự đoán', 'Đánh giá kết quả'])
         with model_tabs[0]:
-            data['sentiment'] = data['so_sao'].apply(lambda txt: tpr.create_sentiment_col(target=txt, stars=4))
-            data['label'] = label_encoder.fit_transform(data['sentiment'])
-            st.write('Dữ liệu ban đầu:')
-            st.dataframe(data[['so_sao', 'noi_dung_binh_luan']].head(5))
-            st.dataframe(data[['so_sao', 'noi_dung_binh_luan']].tail(5))
-            if st.button('Dự đoán Sentiment'):
-                with st.spinner('Đang xử lý...'):
-                    X_test = tpr.sentiment_predict(data, text_col_name='processed_noi_dung_binh_luan', trained_tfidf=proj1_tfidf_vectorizer)
-                    y_pred = proj1_sentiment_lgr_model.predict(X_test)
-                    data['label_pred'] = y_pred
-                    data['Dự báo thái độ bình luận'] = data['label_pred'].apply(lambda txt: 'positive' if txt == 1 else 'negative')
-                    st.success('Dự đoán hoàn tất!')
-                    st.write('Kết quả phân loại:')
-                    st.dataframe(data[['Dự báo thái độ bình luận', 'so_sao', 'noi_dung_binh_luan']])
-                    # Lưu kết quả để đánh giá trong tab khác
-                    st.session_state['data'] = data
-                    st.session_state['y_pred'] = y_pred
+            if 'data' not in st.session_state:
+                st.session_state['data'] = None  # Khởi tạo nếu chưa có dữ liệu
+            if st.session_state['data'] is None:
+                data['sentiment'] = data['so_sao'].apply(lambda txt: tpr.create_sentiment_col(target=txt, stars=4))
+                data['label'] = label_encoder.fit_transform(data['sentiment'])
+                st.write('Dữ liệu ban đầu:')
+                st.dataframe(data[['so_sao', 'noi_dung_binh_luan']].head(5))
+                st.dataframe(data[['so_sao', 'noi_dung_binh_luan']].tail(5))
+                if st.button('Dự đoán Sentiment'):
+                    with st.spinner('Đang xử lý...'):
+                        X_test = tpr.sentiment_predict(data, text_col_name='processed_noi_dung_binh_luan', trained_tfidf=proj1_tfidf_vectorizer)
+                        y_pred = proj1_sentiment_lgr_model.predict(X_test)
+                        data['label_pred'] = y_pred
+                        data['Dự báo thái độ bình luận'] = data['label_pred'].apply(lambda txt: 'positive' if txt == 1 else 'negative')
+                        st.success('Dự đoán hoàn tất!')
+                        st.write('Kết quả phân loại:')
+                        st.dataframe(data[['Dự báo thái độ bình luận', 'so_sao', 'noi_dung_binh_luan']])
+                        # Lưu kết quả để đánh giá trong tab khác
+                        st.session_state['data'] = data
+                        st.session_state['y_pred'] = y_pred
+            else:
+                data = st.session_state['data']
+                st.write('Dữ liệu ban đầu:')
+                st.dataframe(data[['so_sao', 'noi_dung_binh_luan']].head(5))
+                st.dataframe(data[['so_sao', 'noi_dung_binh_luan']].tail(5))
+                st.success('Dự đoán hoàn tất!')
+                st.write('Kết quả phân loại:')
+                st.dataframe(data[['Dự báo thái độ bình luận', 'so_sao', 'noi_dung_binh_luan']])
+                    
         with model_tabs[1]:
             st.header('Đánh giá mô hình')
             if 'data' in st.session_state and 'y_pred' in st.session_state:
