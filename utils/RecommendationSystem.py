@@ -199,7 +199,7 @@ def surprise_recommendation(input_df=pd.DataFrame(), userId_col_name: str = '', 
                        rating_col_name: 'rating', }, inplace=True)
     
     # Lựa chọn các cột để đưa vào surprise xử lý
-    df = df[['userId', 'productId', 'product_name', 'rating']]
+    df = df[['userId', 'productId', 'product_name', 'rating', 'ngay_binh_luan']]
 
     # Chuyển đổi loại dữ liệu
     df['userId'] = df.userId.astype('int')
@@ -210,20 +210,124 @@ def surprise_recommendation(input_df=pd.DataFrame(), userId_col_name: str = '', 
     algorithm_ = model_algorithm
 
     # Dự đoán điểm đánh giá cho sản phẩm
-    df_score = df[['productId','product_name']].drop_duplicates()
+    df_score = df.copy()
     df_score['EstimateScore'] = df_score['productId'].apply(lambda x: algorithm_.predict(userId, x).est) # type: ignore
+    df_score.drop_duplicates(subset=['productId'], inplace=True)
     df_score.sort_values(by=['EstimateScore'], ascending=False, inplace=True)
 
     # Lịch sử mua hàng của userId
     if user_history == True:
-        df_select = df[(df['userId'] == userId) & (df['rating'] >= rate_threshold)]
-        df_select = df_select.set_index('productId')
-        #df_select = df_select.join(df_title)['Name']
-        print(f'\n\nLịch sử mua hàng của userId = {userId}.')
-        display(df_select[['product_name', 'rating']].head(df_select.shape[0])) # type: ignore
+        history = df[(df['userId'] == userId) & (df['rating'] >= rate_threshold)].sort_values(by='ngay_binh_luan', ascending=False).reset_index(drop=True)
+        history = history.reset_index(drop=True).head(top_recommend)
+        history.rename(columns={'userId':userId_col_name, 
+                                'productId':productId_col_name, 
+                                'product_name':product_name_col_name,
+                                'rating': rating_col_name}, inplace=True)
+        history = history[[productId_col_name, product_name_col_name, rating_col_name]]
+    else:
+        history=''
     
     # Lọc kết quả theo ngưỡng đánh giá
-    recommend = df_score[df_score['EstimateScore'] >= rate_threshold].head(top_recommend).set_index('productId')
-    print(f'\n\nCác sản phẩm recommend cho userId = {userId}.')
+    recommend = df_score[df_score['rating'] >= rate_threshold].head(top_recommend).reset_index(drop=True)
+    recommend.rename(columns={'userId':userId_col_name, 
+                            'productId':productId_col_name, 
+                            'product_name':product_name_col_name,
+                            'rating': rating_col_name}, inplace=True)
     print(f'\nToàn bộ funtion xử lý trong {(time.time() - start_process):.2f}s')
-    return recommend
+    return recommend[[productId_col_name, product_name_col_name, rating_col_name]], history
+
+def hybrid_recommendation(
+    user_id,
+    search_kw,
+    input_df,
+    gensim_tfidf,
+    gensim_index,
+    gensim_dictionary,
+    surprise_algorithm,
+    top_n=5,
+    stars_threshold=4,
+):
+    """
+    Hybrid Recommendation dựa trên Gensim và Surprise.
+
+    Parameters:
+    -----------
+    user_id : int
+        ID của người dùng cần gợi ý sản phẩm.
+    search_kw : str or int
+        Từ khóa tìm kiếm hoặc mã sản phẩm.
+    input_df : pd.DataFrame
+        DataFrame chứa thông tin sản phẩm.
+    gensim_tfidf : gensim.models.TfidfModel
+        Mô hình TF-IDF đã huấn luyện.
+    gensim_index : gensim.similarities.SparseMatrixSimilarity
+        Ma trận tương tự từ Gensim.
+    gensim_dictionary : gensim.corpora.Dictionary
+        Từ điển của Gensim.
+    surprise_algorithm : object
+        Mô hình Surprise đã huấn luyện.
+    top_n : int, optional
+        Số sản phẩm gợi ý (default=5).
+    stars_threshold : float, optional
+        Ngưỡng đánh giá sản phẩm (default=4).
+
+    Returns:
+    --------
+    pd.DataFrame
+        DataFrame chứa thông tin sản phẩm gợi ý.
+    """
+    start_process = time.time()
+    # Xử lý đầu vào search_kw
+    if isinstance(search_kw, str) and search_kw.isdigit():
+        search_kw = int(search_kw)
+
+    # **1. Gensim Recommendation**
+    if isinstance(search_kw, int):  # Tìm theo mã sản phẩm
+        product_description = input_df.loc[
+            input_df["ma_san_pham"] == search_kw, "mo_ta_special_words_remove_stopword"
+        ].values
+        if len(product_description) == 0:
+            raise ValueError("Mã sản phẩm không tồn tại trong dữ liệu.")
+        query = product_description[0].split()
+    else:  # Tìm theo từ khóa
+        query = word_tokenize(search_kw)
+
+    # Tính toán độ tương đồng sản phẩm từ Gensim
+    query_bow = gensim_dictionary.doc2bow(query)
+    query_tfidf = gensim_tfidf[query_bow]
+    gensim_sims = gensim_index[query_tfidf]
+
+    # Lấy top sản phẩm từ Gensim
+    gensim_results = sorted(enumerate(gensim_sims), key=lambda x: x[1], reverse=True)
+    gensim_recommendations = [
+        {
+            "ma_san_pham": input_df.iloc[sim[0]]["ma_san_pham"],
+            "ten_san_pham": input_df.iloc[sim[0]]["ten_san_pham"],
+            "mo_ta": input_df.iloc[sim[0]]["mo_ta"],
+            "so_sao": input_df.iloc[sim[0]]["so_sao"],
+            "gia_ban": input_df.iloc[sim[0]]["gia_ban"],
+            "similarity_score": sim[1],
+        }
+        for sim in gensim_results
+        if input_df.iloc[sim[0]]["so_sao"] >= stars_threshold
+    ]
+
+    # Chuyển thành DataFrame
+    gensim_df = pd.DataFrame(gensim_recommendations)
+
+    # **2. Surprise Recommendation**
+    # Dự đoán điểm đánh giá từ Surprise cho các sản phẩm từ Gensim
+    gensim_df["EstimateScore"] = gensim_df["ma_san_pham"].apply(
+        lambda x: surprise_algorithm.predict(user_id, x).est
+    )
+
+    # **3. Kết hợp kết quả**
+    # Kết hợp similarity_score từ Gensim và EstimateScore từ Surprise
+    gensim_df["final_score"] = 1/(1/gensim_df["similarity_score"]+ 1/gensim_df["EstimateScore"])
+
+    # Sắp xếp theo final_score và trả về top N sản phẩm ['so_sao', 'final_score']
+    recommendations = gensim_df.sort_values(by=['similarity_score','final_score'], ascending=False).drop_duplicates(subset='ma_san_pham').reset_index(drop=True).head(top_n)
+    print(f'\nToàn bộ funtion `hybrid_recommendation` xử lý trong {(time.time() - start_process):.2f}s')
+    print(f'\nCác sản phẩm recommend cho userId = {user_id}.')
+    print(f'Với keyword tìm kiếm là "{search_kw}".')
+    return recommendations
