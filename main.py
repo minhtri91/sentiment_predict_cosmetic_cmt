@@ -10,7 +10,7 @@ from utils import TextProcessing as tpr
 from utils import evaluation
 from underthesea import word_tokenize, pos_tag, sent_tokenize
 from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, ConfusionMatrixDisplay, roc_curve, auc
 from collections import Counter
 from wordcloud import WordCloud as wc
 label_encoder = LabelEncoder()
@@ -38,7 +38,7 @@ proj1_sentiment_lgr_model, proj1_tfidf_vectorizer = load_model_and_tfidf()
 
 # Giao diện phần 'Tải dữ liệu lên hệ thống'
 st.sidebar.write('# :briefcase: Đồ án tốt nghiệp K299')
-st.sidebar.write('### :scroll: Project 1: Sentiment analysis')
+st.sidebar.write('### :scroll: Project 1: Sentiment Analysis')
 st.sidebar.title('Menu:')
 info_options = st.sidebar.radio(
     ':gear: Các chức năng:', 
@@ -73,7 +73,11 @@ if info_options == 'Tổng quan về hệ thống':
             st.write('- Khách hàng có thể vào website hasaki.vn để tìm kiếm, lựa chọn sản phẩm, xem các đánh giá/nhận xét và đặt mua sản phẩm.')
             st.write('- Từ những đánh giá của khách hàng, vấn đề được đưa ra là làm sao để các nhãn hàng hiểu khách hàng rõ hơn, biết họ đánh giá gì về sản phẩm, từ đó có thể cải thiện chất lượng sản phẩm cũng như các dịch vụ đi kèm.')
     with general_info_tabs[1]:
-        st.header('Quy trình triển khai hệ thống')
+        st.header('Giải pháp đề xuất')
+        st.write('- Sentiment Analysis là quá trình phân tích, đánh giá quan điểm của một người về một đối tượng nào đó (quan điểm mang tính tích cực, tiêu cực, hay trung tính,..). Quá trình này có thể thực hiện bằng việc sử dụng các tập luật (rule based), sử dụng Machine Learning hoặc phương pháp Hybrid (kết hợp hai phương pháp trên)')
+        st.write('''Lợi ích của phân tích thái độ, quan điểm:
+- Xác định và trích xuất các thông tin hữu ích từ khách hàng về mức độ quan tâm, hài lòng của KH đối với sản phẩm, dịch vụ của doanh nghiệp từ đó doanh nghiệp có thể điều chỉnh chiến lược Kinh doanh, Marketing, và các dịch vụ phù hợp với khách hàng hơn.
+- Phân tích đối thủ cạnh tranh, để hiểu cách khách hàng cảm nhận về các sản phẩm hoặc dịch vụ của đối thủ.''')
         st.image('img/Gioi_thieu_proj1.PNG', use_column_width=True)
 
 ## Xem dữ liệu đã upload lên, đưa dữ liệu vào session để sử dụng lại được
@@ -305,8 +309,8 @@ if info_options == 'Thông tin về sản phẩm':
                 with info_tabs[2]:
                     filtered_product = selected_product.groupby('ma_san_pham')['processed_noi_dung_binh_luan'].apply(' '.join).reset_index()
                     filtered_product.rename(columns={"processed_noi_dung_binh_luan": "merged_comments"}, inplace=True)
-                    filtered_product['positive_words'] = filtered_product['merged_comments'].apply(lambda txt: ' '.join(tpr.find_words(txt, list_of_words=positive_words_lst)[1]))
-                    filtered_product['negative_words'] = filtered_product['merged_comments'].apply(lambda txt: ' '.join(tpr.find_words(txt, list_of_words=negative_words_lst)[1]))
+                    filtered_product['positive_words'] = filtered_product['merged_comments'].apply(lambda txt: ' '.join(tpr.find_words(txt, list_of_words=positive_words_lst)[1])) # type: ignore
+                    filtered_product['negative_words'] = filtered_product['merged_comments'].apply(lambda txt: ' '.join(tpr.find_words(txt, list_of_words=negative_words_lst)[1])) # type: ignore
                     col1, col2 = st.columns(2)
                     with col1:
                         st.write('##### Wordcloud tích cực')
@@ -388,7 +392,7 @@ if info_options == 'Dự báo thái độ cho dataset':
             if 'data' not in st.session_state:
                 st.session_state['data'] = None  # Khởi tạo nếu chưa có dữ liệu
             if st.session_state['data'] is None:
-                data['sentiment'] = data['so_sao'].apply(lambda txt: tpr.create_sentiment_col(target=txt, stars=4))
+                data['sentiment'] = data['so_sao'].apply(lambda txt: tpr.create_sentiment_col(target=txt, stars=4)) # type: ignore
                 data['label'] = label_encoder.fit_transform(data['sentiment'])
                 st.write('Dữ liệu ban đầu:')
                 st.dataframe(data[['so_sao', 'noi_dung_binh_luan']].head(5))
@@ -397,6 +401,7 @@ if info_options == 'Dự báo thái độ cho dataset':
                     with st.spinner('Đang xử lý...'):
                         X_test = tpr.sentiment_predict(data, text_col_name='processed_noi_dung_binh_luan', trained_tfidf=proj1_tfidf_vectorizer)
                         y_pred = proj1_sentiment_lgr_model.predict(X_test)
+                        y_pred_proba = proj1_sentiment_lgr_model.predict_proba(X_test)[:, 1]  # Xác suất positive
                         data['label_pred'] = y_pred
                         data['Dự báo thái độ bình luận'] = data['label_pred'].apply(lambda txt: 'positive' if txt == 1 else 'negative')
                         st.success('Dự đoán hoàn tất!')
@@ -405,6 +410,7 @@ if info_options == 'Dự báo thái độ cho dataset':
                         # Lưu kết quả để đánh giá trong tab khác
                         st.session_state['data'] = data
                         st.session_state['y_pred'] = y_pred
+                        st.session_state['y_pred_proba'] = y_pred_proba
             else:
                 data = st.session_state['data']
                 st.write('Dữ liệu ban đầu:')
@@ -415,10 +421,11 @@ if info_options == 'Dự báo thái độ cho dataset':
                 st.dataframe(data[['Dự báo thái độ bình luận', 'so_sao', 'noi_dung_binh_luan']])
                     
         with model_tabs[1]:
-            st.header('Đánh giá mô hình')
-            if 'data' in st.session_state and 'y_pred' in st.session_state:
+            st.header('Đánh giá mô hình Logistic Regression')
+            if 'data' in st.session_state and 'y_pred' in st.session_state and 'y_pred_proba' in st.session_state:
                 data = st.session_state['data']
                 y_pred = st.session_state['y_pred']
+                y_pred_proba = st.session_state['y_pred_proba']
 
                 # Tính toán metrics
                 metrics = evaluation.evaluate_model(data['label'], y_pred)
@@ -431,36 +438,50 @@ if info_options == 'Dự báo thái độ cho dataset':
                 fig, ax = plt.subplots()
                 disp.plot(ax=ax, cmap='Blues')
                 st.pyplot(fig)
+                # Vẽ ROC Curve
+                fpr, tpr, _ = roc_curve(data['label'], y_pred_proba)
+                roc_auc = auc(fpr, tpr)
+                st.subheader('ROC Curve')
+                fig, ax = plt.subplots()
+                ax.plot(fpr, tpr, color='blue', lw=2, label=f'ROC curve (AUC = {roc_auc:.2f})')
+                ax.plot([0, 1], [0, 1], color='gray', linestyle='--', lw=2)
+                ax.set_xlim([0.0, 1.0]) # type: ignore
+                ax.set_ylim([0.0, 1.05]) # type: ignore
+                ax.set_xlabel('False Positive Rate', fontsize=12)
+                ax.set_ylabel('True Positive Rate', fontsize=12)
+                ax.set_title('ROC Curve', fontsize=16)
+                ax.legend(loc="lower right")
+                st.pyplot(fig)
             else:
                 st.warning('Vui lòng thực hiện dự đoán trước trong tab "Dự đoán".')
 
 if info_options == 'Dự báo thái độ cho comment':
-    # st.image('img/hasaki_logo.png', use_column_width=True)
+    st.image('img/hasaki_logo.png', use_column_width=True)
     # if st.session_state['uploaded_data'] is None:
     #     st.warning('Dataset chưa được tải lên')
     # else:
-        st.write('## Dự báo thái độ một bình luận')
-        data = st.session_state['uploaded_data']  # Lấy dữ liệu từ session_state
-        st.write('Nhập một comment để kiểm tra sentiment')
-        user_input = st.text_area('Nhập comment:')
-        if st.button('Dự đoán'):
-            if user_input == '':
-                st.warning('Mời bạn nhập nội dung bình luận!')
-            else:
-                with st.spinner('Đang xử lý...'):
-                    input_df = pd.DataFrame({'noi_dung_binh_luan': [user_input]})
-                    input_df = tpr.txt_process_for_cols(input_df=input_df,
-                                                        input_col_name='noi_dung_binh_luan',
-                                                        emoji_dict=emoji_dict,
-                                                        teen_dict=teen_dict,
-                                                        translate_dict=translate_dict,
-                                                        stopwords_lst=stopwords_lst,
-                                                        groupby=False,
-                                                        chunking=False)
-                    X_test = tpr.sentiment_predict(input_df, text_col_name='noi_dung_binh_luan_special_words_remove_stopword', trained_tfidf=proj1_tfidf_vectorizer)
-                    y_pred = proj1_sentiment_lgr_model.predict(X_test)[0]
-                    input_df['label_pred'] = y_pred
-                    input_df['Dự báo thái độ bình luận'] = input_df['label_pred'].apply(lambda txt: '**Positive**' if txt == 1 else '***Negative***')
-                    st.success('Dự đoán hoàn tất!')
-                    st.write('Nội dung bình luận có khả năng:', input_df['Dự báo thái độ bình luận'][0])
+    st.write('## Dự báo thái độ một bình luận')
+    data = st.session_state['uploaded_data']  # Lấy dữ liệu từ session_state
+    st.write('Nhập một comment để kiểm tra sentiment')
+    user_input = st.text_area('Nhập comment:')
+    if st.button('Dự đoán'):
+        if user_input == '':
+            st.warning('Mời bạn nhập nội dung bình luận!')
+        else:
+            with st.spinner('Đang xử lý...'):
+                input_df = pd.DataFrame({'noi_dung_binh_luan': [user_input]})
+                input_df = tpr.txt_process_for_cols(input_df=input_df, # type: ignore
+                                                    input_col_name='noi_dung_binh_luan',
+                                                    emoji_dict=emoji_dict,
+                                                    teen_dict=teen_dict,
+                                                    translate_dict=translate_dict,
+                                                    stopwords_lst=stopwords_lst,
+                                                    groupby=False,
+                                                    chunking=False)
+                X_test = tpr.sentiment_predict(input_df, text_col_name='noi_dung_binh_luan_special_words_remove_stopword', trained_tfidf=proj1_tfidf_vectorizer) # type: ignore
+                y_pred = proj1_sentiment_lgr_model.predict(X_test)[0]
+                input_df['label_pred'] = y_pred
+                input_df['Dự báo thái độ bình luận'] = input_df['label_pred'].apply(lambda txt: '**Positive**' if txt == 1 else '***Negative***')
+                st.success('Dự đoán hoàn tất!')
+                st.write('Nội dung bình luận có khả năng:', input_df['Dự báo thái độ bình luận'][0])
                     
