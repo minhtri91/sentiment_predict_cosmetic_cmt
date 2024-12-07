@@ -37,21 +37,23 @@ def load_model_and_tfidf():
 proj1_sentiment_lgr_model, proj1_tfidf_vectorizer = load_model_and_tfidf()
 
 # Giao diện phần 'Tải dữ liệu lên hệ thống'
+st.sidebar.write('# :briefcase: Đồ án tốt nghiệp K299')
+st.sidebar.write('### :scroll: Project 1: Sentiment analysis')
 st.sidebar.title('Menu:')
 info_options = st.sidebar.radio(
-    'Các chức năng :robot_face:', 
+    ':gear: Các chức năng:', 
     options=['Tổng quan về hệ thống', 'Tải dữ liệu lên hệ thống', 'Tổng quan về dataset', 'Thông tin về sản phẩm', 'Dự báo thái độ cho dataset', 'Dự báo thái độ cho comment']
 )
 st.sidebar.write('-'*3)
-st.sidebar.write('#### :star: Giảng viên hướng dẫn:')
-st.sidebar.write(':female-teacher: Thạc Sỹ Khuất Thùy Phương')
+st.sidebar.write('### :left_speech_bubble: Giảng viên hướng dẫn:')
+st.sidebar.write('### :female-teacher: Thạc Sỹ Khuất Thùy Phương')
 st.sidebar.write('-'*3)
 st.sidebar.write('#### Nhóm cùng thực hiện:')
 st.sidebar.write(' :boy: Nguyễn Minh Trí')
 st.sidebar.write(' :boy: Võ Huy Quốc')
 st.sidebar.write(' :boy: Phan Trần Minh Khuê')
 st.sidebar.write('-'*3)
-st.sidebar.write('#### :clock830: Thời gian thực hiện:')
+st.sidebar.write('#### :clock830: Thời gian báo cáo:')
 st.sidebar.write(':spiral_calendar_pad: 14/12/2024')
 
 ## Kiểm tra dữ liệu đã upload trước đó
@@ -151,12 +153,6 @@ if info_options == 'Tổng quan về dataset':
         st.pyplot(fig)
 
         # Thống kê số lượng bình luận theo quý
-        # Tạo cột 'quarter' (quý) từ cột 'ngay_binh_luan'
-        # Chuyển dạng dữ liệu biến 'ngay_binh_luan' sang biến datetime
-        # Dữ liệu thời gian bất thường.
-        # data = data.drop(data[data['ngay_binh_luan'] == '30/11/-0001'].index)
-        # data['ngay_binh_luan'] = pd.to_datetime(data['ngay_binh_luan'], format='%Y-%m-%d')
-        # data['quarter'] = data['ngay_binh_luan'].dt.to_period('Q').astype(str)
         comment_count_quarter = data.groupby('quarter').size().reset_index()
         comment_count_quarter.rename(columns={0: 'so_luong_binh_luan_quy'}, inplace=True)
         st.write("### Thống kê số lượng bình luận theo quý")
@@ -251,18 +247,61 @@ if info_options == 'Thông tin về sản phẩm':
             if not selected_product.empty:
                 st.write('-'*3)
                 st.write(f'#### {selected_product["ten_san_pham"].values[0]}')
-                st.write(f'### {selected_product["diem_trung_binh"].values[0]} :star:', '{:,.0f}'.format(selected_product["gia_ban"].values[0]),'VNĐ')
-                product_description = selected_product['mo_ta'].values[0]
-                # truncated_description = ' '.join(product_description.split()[:100])
+                col1, col2 = st.columns([2,4.5])
+                with col1:
+                    st.write(f'##### {selected_product["diem_trung_binh"].values[0]} :star:', '{:,.0f}'.format(selected_product["gia_ban"].values[0]),'VNĐ')
+                    product_description = selected_product['mo_ta'].values[0]
+                with col2:
+                    # Tần suất số sao đánh giá trên sản phẩm
+                    # Tạo figure và axis
+                    fig, ax = plt.subplots(figsize=(6, 2))
+                    # Tạo biểu đồ countplot
+                    sns.countplot(
+                        data=selected_product[['so_sao']].sort_values(by='so_sao', ascending=False), 
+                        y='so_sao', 
+                        # palette='tab10', 
+                        color='palegoldenrod',
+                        ax=ax,
+                        width=0.5
+                    )
+                    # Thêm nhãn giá trị lên các cột
+                    for container in ax.containers: # type: ignore
+                        ax.bar_label(container)
+                    # Thiết lập tiêu đề và xoay nhãn trục X
+                    ax.set_title('Số sao đánh giá trên sản phẩm', fontsize=15)
+                    ax.set_xticklabels(ax.get_xticklabels(), rotation=0)
+                    plt.xlabel('')
+                    plt.ylabel('')
+                    # Tự động căn chỉnh layout
+                    plt.tight_layout()
+                    # Hiển thị biểu đồ
+                    st.pyplot(fig)
                 # Tabs chính
                 info_tabs = st.tabs(['Thông tin sản phẩm', 'Đánh giá từ khách hàng', 'Wordcloud'])
                 with info_tabs[0]:
                     st.write(product_description.replace('THÔNG TIN SẢN PHẨM','').replace('Làm sao để phân biệt hàng có trộn hay không ?\nHàng trộn sẽ không thể xuất hoá đơn đỏ (VAT) 100% được do có hàng không nguồn gốc trong đó.\nTại Hasaki, 100% hàng bán ra sẽ được xuất hoá đơn đỏ cho dù khách hàng có lấy hay không. Nếu có nhu cầu lấy hoá đơn đỏ, quý khách vui lòng lấy trước 22h cùng ngày. Vì sau 22h, hệ thống Hasaki sẽ tự động xuất hết hoá đơn cho những hàng hoá mà khách hàng không đăng kí lấy hoá đơn.\nDo xuất được hoá đơn đỏ 100% nên đảm bảo 100% hàng tại Hasaki là hàng chính hãng có nguồn gốc rõ ràng.',''))
                 with info_tabs[1]:
-                    for i in range(len(selected_product["noi_dung_binh_luan"])):
-                        st.write(f'{selected_product["ngay_binh_luan"].dt.strftime("%d-%m-%Y").values[i]}, {selected_product["ho_ten"].values[i]}, {selected_product["so_sao"].values[i]*":star:"}')
-                        st.write(f'{selected_product["noi_dung_binh_luan"].values[i]}')
-                        st.write('-'*3)
+                    # for i in range(len(selected_product["noi_dung_binh_luan"])):
+                    #     st.write(f'{selected_product["ngay_binh_luan"].dt.strftime("%d-%m-%Y").values[i]}, {selected_product["ho_ten"].values[i]}, {selected_product["so_sao"].values[i]*":star:"}')
+                    #     st.write(f'{selected_product["noi_dung_binh_luan"].values[i]}')
+                    #     st.write('-'*3)
+                    # Lọc số sao đánh giá
+                    # Tạo danh sách unique số sao từ dữ liệu
+                    star_ratings = sorted(selected_product["so_sao"].unique())
+                    # Tạo selectbox để chọn số sao
+                    selected_star = st.selectbox("Chọn số sao để lọc bình luận:", options=["Tất cả"] + star_ratings)
+
+                    # Lọc dữ liệu dựa trên số sao đã chọn
+                    if selected_star != "Tất cả":
+                        filtered_reviews = selected_product[selected_product["so_sao"] == selected_star]
+                    else:
+                        filtered_reviews = selected_product
+
+                    # Hiển thị các bình luận đã được lọc
+                    for i in range(len(filtered_reviews)):
+                        st.write(f'{filtered_reviews["ngay_binh_luan"].dt.strftime("%d-%m-%Y").values[i]}, {filtered_reviews["ho_ten"].values[i]}, {filtered_reviews["so_sao"].values[i] * ":star:"}')
+                        st.write(f'{filtered_reviews["noi_dung_binh_luan"].values[i]}')
+                        st.write('-' * 3)
                 with info_tabs[2]:
                     filtered_product = selected_product.groupby('ma_san_pham')['processed_noi_dung_binh_luan'].apply(' '.join).reset_index()
                     filtered_product.rename(columns={"processed_noi_dung_binh_luan": "merged_comments"}, inplace=True)
@@ -396,10 +435,10 @@ if info_options == 'Dự báo thái độ cho dataset':
                 st.warning('Vui lòng thực hiện dự đoán trước trong tab "Dự đoán".')
 
 if info_options == 'Dự báo thái độ cho comment':
-    st.image('img/hasaki_logo.png', use_column_width=True)
-    if st.session_state['uploaded_data'] is None:
-        st.warning('Dataset chưa được tải lên')
-    else:
+    # st.image('img/hasaki_logo.png', use_column_width=True)
+    # if st.session_state['uploaded_data'] is None:
+    #     st.warning('Dataset chưa được tải lên')
+    # else:
         st.write('## Dự báo thái độ một bình luận')
         data = st.session_state['uploaded_data']  # Lấy dữ liệu từ session_state
         st.write('Nhập một comment để kiểm tra sentiment')
