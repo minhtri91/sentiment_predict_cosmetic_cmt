@@ -33,6 +33,11 @@ def load_model_and_tfidf():
     tfidf_vectorizer = evaluation.Load_Object('models/proj1_tfidf_vectorizer.pkl')
     return model, tfidf_vectorizer
 
+@st.cache_data
+def convert_df_to_csv(df):
+  # IMPORTANT: Cache the conversion to prevent computation on every rerun
+  return df.to_csv().encode('utf-8')
+
 # Load model và tfidf
 proj1_sentiment_lgr_model, proj1_tfidf_vectorizer = load_model_and_tfidf()
 
@@ -54,7 +59,7 @@ st.sidebar.write(' :boy: Võ Huy Quốc')
 st.sidebar.write(' :boy: Phan Trần Minh Khuê')
 st.sidebar.write('-'*3)
 st.sidebar.write('#### :clock830: Thời gian báo cáo:')
-st.sidebar.write(':spiral_calendar_pad: 08/12/2024')
+st.sidebar.write(':spiral_calendar_pad: 14/12/2024')
 
 ## Kiểm tra dữ liệu đã upload trước đó
 if 'uploaded_data' not in st.session_state:
@@ -142,7 +147,7 @@ if info_options == 'Tổng quan về dataset':
         st.pyplot(fig)
 
         # Số lượng các từ tiêu cực
-        st.write("### Số lượng các từ tiêu cực đã nhận xét")
+        st.write('### Số lượng các từ tiêu cực đã nhận xét')
         # Tạo đồ thị
         fig, ax = plt.subplots(figsize=(10, 6))  # Khởi tạo figure và axis
         sns.countplot(data=data, x='negative_words_count', hue='negative_words_count', legend=False, palette='tab10', ax=ax)  # type: ignore # Tạo biểu đồ
@@ -156,36 +161,8 @@ if info_options == 'Tổng quan về dataset':
         # Hiển thị đồ thị trên Streamlit
         st.pyplot(fig)
 
-        # Thống kê số lượng bình luận theo quý
-        comment_count_quarter = data.groupby('quarter').size().reset_index()
-        comment_count_quarter.rename(columns={0: 'so_luong_binh_luan_quy'}, inplace=True)
-        st.write("### Thống kê số lượng bình luận theo quý")
-        # Tạo figure và axis
-        fig, ax = plt.subplots(figsize=(12, 6))
-        # Tạo biểu đồ lineplot
-        sns.lineplot(
-            data=comment_count_quarter, 
-            x='quarter', 
-            y='so_luong_binh_luan_quy', 
-            marker='o', 
-            label='Số lượng bình luận theo quý', 
-            ax=ax
-        )
-        # Thêm giá trị trực tiếp lên biểu đồ
-        for x, y in zip(comment_count_quarter['quarter'], comment_count_quarter['so_luong_binh_luan_quy']):
-            ax.text(x, y, str(y), color='black', ha='center', va='bottom', fontsize=10)
-        # Thiết lập tiêu đề và nhãn
-        ax.set_title('Thống kê số lượng bình luận theo quý', fontsize=16)
-        ax.set_xlabel('Quý', fontsize=12)
-        ax.set_ylabel('Số lượng bình luận theo quý', fontsize=12)
-        ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
-        ax.grid(True)
-        ax.legend()
-        # Hiển thị biểu đồ
-        st.pyplot(fig)
-
         # Tần suất Positive/Negative
-        st.write("### Tần suất Positive/Negative trên tập dữ liệu")
+        st.write('### Tần suất Positive/Negative trên tập dữ liệu')
         # Tạo figure và axis
         fig, ax = plt.subplots(figsize=(8, 5))
         # Tạo biểu đồ countplot
@@ -206,6 +183,94 @@ if info_options == 'Tổng quan về dataset':
         # Hiển thị biểu đồ
         st.pyplot(fig)
 
+        # Tạo biểu đồ
+        product_sales = data['ten_san_pham'].value_counts().reset_index()
+        top_sales = product_sales.head(10)
+        st.write('### Top 10 sản phẩm được mua nhiều nhất từ trước đến nay')
+        fig, ax = plt.subplots(figsize=(10, 6))
+        sns.barplot(data=top_sales, x='ten_san_pham', y='index', palette='tab10', ax=ax)
+
+        # Thêm tiêu đề và nhãn
+        ax.set_title('Top sản phẩm có doanh số cao nhất', fontsize=16)
+        ax.set_xlabel('Số lượng bán được', fontsize=14)
+        ax.set_ylabel('Tên sản phẩm', fontsize=20)
+        ax.grid(axis='y', linestyle='--', alpha=0.7)
+
+        # Thêm số lượng trên đầu mỗi thanh
+        for i, v in enumerate(top_sales['ten_san_pham']):
+            ax.text(
+                v + 0.5,  # Vị trí x (số lượng + một khoảng nhỏ để không dính vào thanh)
+                i,  # Vị trí y (tên sản phẩm)
+                str(v),  # Nội dung: số lượng
+                color='black', 
+                ha='left', 
+                va='center', 
+                fontsize=12
+            )
+        # Hiển thị biểu đồ trong Streamlit
+        st.pyplot(fig)
+
+        # Thống kê số lượng hàng bán theo quý
+        sales_count_quarter = data.groupby('quarter').size().reset_index()
+        sales_count_quarter.rename(columns={0: 'so_luong_sales_quy'}, inplace=True)
+        st.write('### Thống kê số lượng hàng bán theo quý')
+        # Tạo figure và axis
+        fig, ax = plt.subplots(figsize=(12, 6))
+        # Tạo biểu đồ lineplot
+        sns.lineplot(
+            data=sales_count_quarter, 
+            x='quarter', 
+            y='so_luong_sales_quy', 
+            marker='o', 
+            label='Số lượng hàng bán theo quý', 
+            ax=ax
+        )
+        # Thêm giá trị trực tiếp lên biểu đồ
+        for x, y in zip(sales_count_quarter['quarter'], sales_count_quarter['so_luong_sales_quy']):
+            ax.text(x, y, str(y), color='black', ha='center', va='bottom', fontsize=10)
+        # Thiết lập tiêu đề và nhãn
+        ax.set_title('Thống kê số lượng hàng bán theo quý', fontsize=16)
+        ax.set_xlabel('Quý', fontsize=12)
+        ax.set_ylabel('Số lượng hàng bán theo quý', fontsize=12)
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+        ax.grid(True)
+        ax.legend()
+        # Hiển thị biểu đồ
+        st.pyplot(fig)
+
+        # Sử dụng groupby theo 'year' và đếm số sản phẩm theo 'year' bằng size()
+        # Tạo cột 'year' từ cột 'ngay_binh_luan'
+        data['year'] = data['ngay_binh_luan'].dt.year
+        product_count_yearly = data.groupby('year').size().reset_index()
+        product_count_yearly.rename(columns={0: 'ban_sp_theo_nam'}, inplace=True)
+
+        # Vẽ biểu đồ lineplot
+        st.write('### Thống kê số lượng sản phẩm bán ra theo năm')
+        fig, ax = plt.subplots(figsize=(12, 6))
+        sns.lineplot(
+            data=product_count_yearly, 
+            x='year', 
+            y='ban_sp_theo_nam', 
+            marker='.', 
+            label='Số lượng sản phẩm bán ra theo năm', 
+            ax=ax
+        )
+
+        # Thêm giá trị trực tiếp lên biểu đồ
+        for x, y in zip(product_count_yearly['year'], product_count_yearly['ban_sp_theo_nam']):
+            ax.text(x, y, str(y), color='black', ha='center', va='bottom', fontsize=10)
+
+        # Thiết lập tiêu đề và nhãn
+        ax.set_title('Thống kê số lượng bán hàng theo năm', fontsize=16)
+        ax.set_xlabel('Năm', fontsize=12)
+        ax.set_ylabel('Số hàng bán theo năm', fontsize=12)
+        ax.grid(True)
+        ax.legend()
+        plt.xticks(rotation=90)
+        plt.tight_layout()
+
+        # Hiển thị biểu đồ trong Streamlit
+        st.pyplot(fig)
 
 # Giao diện phần 'Thông tin về sản phẩm'
 if info_options == 'Thông tin về sản phẩm':
@@ -215,8 +280,6 @@ if info_options == 'Thông tin về sản phẩm':
     else:
         st.write('## Truy suất thông tin về một sản phẩm bất kỳ')
         data = st.session_state['uploaded_data']  # Lấy dữ liệu từ session_state
-        # data = data.drop(data[data['ngay_binh_luan'] == '30/11/-0001'].index)
-        # data['ngay_binh_luan'] = pd.to_datetime(data['ngay_binh_luan'], format='%Y-%m-%d')
         
         # Lấy sản phẩm
         data_info = data[['ho_ten', 'ma_san_pham', 'ten_san_pham', 'mo_ta', 'diem_trung_binh', 'gia_ban', 'processed_noi_dung_binh_luan', 'ngay_binh_luan']]
@@ -282,8 +345,38 @@ if info_options == 'Thông tin về sản phẩm':
                     st.pyplot(fig)
                 # Tabs chính
                 info_tabs = st.tabs(['Thông tin sản phẩm', 'Đánh giá từ khách hàng', 'Wordcloud'])
+                # with info_tabs[0]:
+                #     xem_tiep = st.checkbox('Xem tiếp...')
+                #     product_description = product_description.replace('1.', '\n').replace('THÔNG TIN SẢN PHẨM','\n').replace('Làm sao để phân biệt hàng có trộn hay không ?\nHàng trộn sẽ không thể xuất hoá đơn đỏ (VAT) 100% được do có hàng không nguồn gốc trong đó.\nTại Hasaki, 100% hàng bán ra sẽ được xuất hoá đơn đỏ cho dù khách hàng có lấy hay không. Nếu có nhu cầu lấy hoá đơn đỏ, quý khách vui lòng lấy trước 22h cùng ngày. Vì sau 22h, hệ thống Hasaki sẽ tự động xuất hết hoá đơn cho những hàng hoá mà khách hàng không đăng kí lấy hoá đơn.\nDo xuất được hoá đơn đỏ 100% nên đảm bảo 100% hàng tại Hasaki là hàng chính hãng có nguồn gốc rõ ràng.','\n')
+                #     if xem_tiep is True:
+                #         st.write(product_description)
+                #     else:
+                #         st.write(product_description[:350]+'...')
+                # Quản lý trạng thái hiển thị nội dung bằng session_state
+                if "show_full_description" not in st.session_state:
+                    st.session_state.show_full_description = False  # Ban đầu thu gọn
+                # Quản lý trạng thái nút bấm để re-run toàn bộ code
+                if "button_clicked" not in st.session_state:
+                    st.session_state.button_clicked = False  # Trạng thái nút bấm ban đầu
+                product_description = product_description.replace('1.', '\n').replace('THÔNG TIN SẢN PHẨM','\n').replace('Làm sao để phân biệt hàng có trộn hay không ?\nHàng trộn sẽ không thể xuất hoá đơn đỏ (VAT) 100% được do có hàng không nguồn gốc trong đó.\nTại Hasaki, 100% hàng bán ra sẽ được xuất hoá đơn đỏ cho dù khách hàng có lấy hay không. Nếu có nhu cầu lấy hoá đơn đỏ, quý khách vui lòng lấy trước 22h cùng ngày. Vì sau 22h, hệ thống Hasaki sẽ tự động xuất hết hoá đơn cho những hàng hoá mà khách hàng không đăng kí lấy hoá đơn.\nDo xuất được hoá đơn đỏ 100% nên đảm bảo 100% hàng tại Hasaki là hàng chính hãng có nguồn gốc rõ ràng.','\n')
                 with info_tabs[0]:
-                    st.write(product_description.replace('THÔNG TIN SẢN PHẨM','').replace('Làm sao để phân biệt hàng có trộn hay không ?\nHàng trộn sẽ không thể xuất hoá đơn đỏ (VAT) 100% được do có hàng không nguồn gốc trong đó.\nTại Hasaki, 100% hàng bán ra sẽ được xuất hoá đơn đỏ cho dù khách hàng có lấy hay không. Nếu có nhu cầu lấy hoá đơn đỏ, quý khách vui lòng lấy trước 22h cùng ngày. Vì sau 22h, hệ thống Hasaki sẽ tự động xuất hết hoá đơn cho những hàng hoá mà khách hàng không đăng kí lấy hoá đơn.\nDo xuất được hoá đơn đỏ 100% nên đảm bảo 100% hàng tại Hasaki là hàng chính hãng có nguồn gốc rõ ràng.',''))
+                    if st.session_state.show_full_description:
+                        # Nếu đang hiển thị toàn bộ nội dung
+                        st.write(product_description)
+                        if st.button("Thu gọn", key="collapse_button"):
+                            st.session_state.show_full_description = False
+                            st.session_state.button_clicked = True
+                    else:
+                        # Nếu đang hiển thị một phần nội dung
+                        st.write(product_description[:350] + '...')
+                        if st.button("Xem tiếp", key="expand_button"):
+                            st.session_state.show_full_description = True
+                            st.session_state.button_clicked = True
+
+                # Đảm bảo cập nhật trạng thái ngay lập tức
+                if st.session_state.button_clicked:
+                    st.session_state.button_clicked = False
+                    st.experimental_rerun()
                 with info_tabs[1]:
                     # for i in range(len(selected_product["noi_dung_binh_luan"])):
                     #     st.write(f'{selected_product["ngay_binh_luan"].dt.strftime("%d-%m-%Y").values[i]}, {selected_product["ho_ten"].values[i]}, {selected_product["so_sao"].values[i]*":star:"}')
@@ -406,7 +499,15 @@ if info_options == 'Dự báo thái độ cho dataset':
                         data['Dự báo thái độ bình luận'] = data['label_pred'].apply(lambda txt: 'positive' if txt == 1 else 'negative')
                         st.success('Dự đoán hoàn tất!')
                         st.write('Kết quả phân loại:')
-                        st.dataframe(data[['Dự báo thái độ bình luận', 'so_sao', 'noi_dung_binh_luan']])
+                        sent_result = data[['Dự báo thái độ bình luận', 'so_sao', 'noi_dung_binh_luan']]
+                        st.dataframe(sent_result)
+                        st.write('-'*3)
+                        st.write('Dữ liệu file .CSV sau phân loại thái độ:')
+                        st.download_button('Download CSV', 
+                                        data=convert_df_to_csv(sent_result), 
+                                        file_name='sentiment_comment.csv', 
+                                        mime='text/csv')
+                        
                         # Lưu kết quả để đánh giá trong tab khác
                         st.session_state['data'] = data
                         st.session_state['y_pred'] = y_pred
@@ -418,7 +519,14 @@ if info_options == 'Dự báo thái độ cho dataset':
                 st.dataframe(data[['so_sao', 'noi_dung_binh_luan']].tail(5))
                 st.success('Dự đoán hoàn tất!')
                 st.write('Kết quả phân loại:')
-                st.dataframe(data[['Dự báo thái độ bình luận', 'so_sao', 'noi_dung_binh_luan']])
+                sent_result = data[['Dự báo thái độ bình luận', 'so_sao', 'noi_dung_binh_luan']]
+                st.dataframe(sent_result)
+                st.write('-'*3)
+                st.write('Dữ liệu file .CSV sau đánh giá thái độ:')
+                st.download_button('Download CSV', 
+                                   data=convert_df_to_csv(sent_result), 
+                                   file_name='sentiment_comment.csv', 
+                                   mime='text/csv')
                     
         with model_tabs[1]:
             st.header('Đánh giá mô hình Logistic Regression')
