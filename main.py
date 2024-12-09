@@ -193,20 +193,20 @@ if info_options == 'Tổng quan về dataset':
         # Thêm tiêu đề và nhãn
         ax.set_title('Top sản phẩm có doanh số cao nhất', fontsize=16)
         ax.set_xlabel('Số lượng bán được', fontsize=14)
-        ax.set_ylabel('Tên sản phẩm', fontsize=20)
+        ax.set_ylabel('Tên sản phẩm', fontsize=14)
         ax.grid(axis='y', linestyle='--', alpha=0.7)
 
-        # Thêm số lượng trên đầu mỗi thanh
-        for i, v in enumerate(top_sales['ten_san_pham']):
-            ax.text(
-                v + 0.5,  # Vị trí x (số lượng + một khoảng nhỏ để không dính vào thanh)
-                i,  # Vị trí y (tên sản phẩm)
-                str(v),  # Nội dung: số lượng
-                color='black', 
-                ha='left', 
-                va='center', 
-                fontsize=12
-            )
+        # # Thêm số lượng trên đầu mỗi thanh
+        # for i, v in enumerate(top_sales['ten_san_pham']):
+        #     ax.text(
+        #         v + 0.5,  # Vị trí x (số lượng + một khoảng nhỏ để không dính vào thanh)
+        #         i,  # Vị trí y (tên sản phẩm)
+        #         str(v),  # Nội dung: số lượng
+        #         color='black', 
+        #         ha='left', 
+        #         va='center', 
+        #         fontsize=12
+        #     )
         # Hiển thị biểu đồ trong Streamlit
         st.pyplot(fig)
 
