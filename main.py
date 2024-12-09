@@ -186,9 +186,11 @@ if info_options == 'Tổng quan về dataset':
         # Tạo biểu đồ
         product_sales = data['ten_san_pham'].value_counts().reset_index()
         top_sales = product_sales.head(10)
+        top_sales.rename(columns={'index': 'ten_sp'}, inplace=True)
+        top_sales.rename(columns={'ten_san_pham': 'sales_cnt'}, inplace=True)
         st.write('### Top 10 sản phẩm được mua nhiều nhất từ trước đến nay')
         fig, ax = plt.subplots(figsize=(10, 6))
-        sns.barplot(data=top_sales, x='ten_san_pham', y='index', palette='tab10', ax=ax)
+        sns.barplot(data=top_sales, x='sales_cnt', y='ten_sp', palette='tab10', ax=ax)
 
         # Thêm tiêu đề và nhãn
         ax.set_title('Top sản phẩm có doanh số cao nhất', fontsize=16)
@@ -196,17 +198,17 @@ if info_options == 'Tổng quan về dataset':
         ax.set_ylabel('Tên sản phẩm', fontsize=14)
         ax.grid(axis='y', linestyle='--', alpha=0.7)
 
-        # # Thêm số lượng trên đầu mỗi thanh
-        # for i, v in enumerate(top_sales['ten_san_pham']):
-        #     ax.text(
-        #         v + 0.5,  # Vị trí x (số lượng + một khoảng nhỏ để không dính vào thanh)
-        #         i,  # Vị trí y (tên sản phẩm)
-        #         str(v),  # Nội dung: số lượng
-        #         color='black', 
-        #         ha='left', 
-        #         va='center', 
-        #         fontsize=12
-        #     )
+        # Thêm số lượng trên đầu mỗi thanh
+        for i, v in enumerate(top_sales['sales_cnt']):
+            ax.text(
+                v + 0.5,  # Vị trí x (số lượng + một khoảng nhỏ để không dính vào thanh)
+                i,  # Vị trí y (tên sản phẩm)
+                str(v),  # Nội dung: số lượng
+                color='black', 
+                ha='left', 
+                va='center', 
+                fontsize=12
+            )
         # Hiển thị biểu đồ trong Streamlit
         st.pyplot(fig)
 
