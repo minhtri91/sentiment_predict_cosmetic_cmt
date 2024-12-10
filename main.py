@@ -177,66 +177,9 @@ if info_options == 'Tổng quan về dataset':
             ax.bar_label(container)
         # Thiết lập tiêu đề và xoay nhãn trục X
         ax.set_title('Tần suất Positive/Negative trên tập dữ liệu', fontsize=14)
-        ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=0)
         # Tự động căn chỉnh layout
         plt.tight_layout()
-        # Hiển thị biểu đồ
-        st.pyplot(fig)
-
-        # # Tạo biểu đồ
-        # product_sales = data['ten_san_pham'].value_counts().reset_index()
-        # top_sales = product_sales.head(10)
-        # top_sales.rename(columns={'index': 'ten_sp'}, inplace=True)
-        # top_sales.rename(columns={'ten_san_pham': 'sales_cnt'}, inplace=True)
-        # st.write('### Top 10 sản phẩm được mua nhiều nhất từ trước đến nay')
-        # fig, ax = plt.subplots(figsize=(10, 6))
-        # sns.barplot(data=top_sales, x='sales_cnt', y='ten_sp', palette='tab10', ax=ax)
-
-        # # Thêm tiêu đề và nhãn
-        # ax.set_title('Top sản phẩm có doanh số cao nhất', fontsize=16)
-        # ax.set_xlabel('Số lượng bán được', fontsize=14)
-        # ax.set_ylabel('Tên sản phẩm', fontsize=14)
-        # ax.grid(axis='y', linestyle='--', alpha=0.7)
-
-        # # Thêm số lượng trên đầu mỗi thanh
-        # for i, v in enumerate(top_sales['sales_cnt']):
-        #     ax.text(
-        #         v + 0.5,  # Vị trí x (số lượng + một khoảng nhỏ để không dính vào thanh)
-        #         i,  # Vị trí y (tên sản phẩm)
-        #         str(v),  # Nội dung: số lượng
-        #         color='black', 
-        #         ha='left', 
-        #         va='center', 
-        #         fontsize=12
-        #     )
-        # # Hiển thị biểu đồ trong Streamlit
-        # st.pyplot(fig)
-
-        # Thống kê số lượng hàng bán theo quý
-        sales_count_quarter = data.groupby('quarter').size().reset_index()
-        sales_count_quarter.rename(columns={0: 'so_luong_sales_quy'}, inplace=True)
-        st.write('### Thống kê số lượng hàng bán theo quý')
-        # Tạo figure và axis
-        fig, ax = plt.subplots(figsize=(12, 6))
-        # Tạo biểu đồ lineplot
-        sns.lineplot(
-            data=sales_count_quarter, 
-            x='quarter', 
-            y='so_luong_sales_quy', 
-            marker='o', 
-            label='Số lượng hàng bán theo quý', 
-            ax=ax
-        )
-        # Thêm giá trị trực tiếp lên biểu đồ
-        for x, y in zip(sales_count_quarter['quarter'], sales_count_quarter['so_luong_sales_quy']):
-            ax.text(x, y, str(y), color='black', ha='center', va='bottom', fontsize=10)
-        # Thiết lập tiêu đề và nhãn
-        ax.set_title('Thống kê số lượng hàng bán theo quý', fontsize=16)
-        ax.set_xlabel('Quý', fontsize=12)
-        ax.set_ylabel('Số lượng hàng bán theo quý', fontsize=12)
-        ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
-        ax.grid(True)
-        ax.legend()
         # Hiển thị biểu đồ
         st.pyplot(fig)
 
@@ -246,7 +189,7 @@ if info_options == 'Tổng quan về dataset':
         product_count_yearly = data.groupby('year').size().reset_index()
         product_count_yearly.rename(columns={0: 'ban_sp_theo_nam'}, inplace=True)
 
-        # Vẽ biểu đồ lineplot
+        # Vẽ biểu đồ lineplot thống kê số lượng sản phẩm bán ra theo năm
         st.write('### Thống kê số lượng sản phẩm bán ra theo năm')
         fig, ax = plt.subplots(figsize=(12, 6))
         sns.lineplot(
@@ -273,6 +216,88 @@ if info_options == 'Tổng quan về dataset':
 
         # Hiển thị biểu đồ trong Streamlit
         st.pyplot(fig)
+
+        # Chọn xem theo quý hoặc năm
+        st.write('### Thống kê số lượng sản phẩm bán ra theo quý-năm/năm')
+        # Tạo cột 'quý' và 'năm'
+        data['year'] = data['ngay_binh_luan'].dt.year
+        data['quarter'] = data['ngay_binh_luan'].dt.quarter 
+        view_option = st.selectbox('Xem số liệu theo:', ['Năm', 'Quý'])
+
+        if view_option == 'Năm':
+            # Thống kê sản phẩm bán theo năm
+            product_sales = data.groupby(['year', 'ten_san_pham']).size().reset_index(name='count')
+            
+            # Lọc top 10 sản phẩm
+            year_selected = st.selectbox('Chọn năm:', sorted(data['year'].unique()))
+            filtered_data = product_sales[product_sales['year'] == year_selected].nlargest(10, 'count')
+            
+            # Vẽ biểu đồ
+            fig, ax = plt.subplots(figsize=(10, 6))
+            sns.barplot(data=filtered_data, x='count', y='ten_san_pham', palette='tab10', ax=ax)
+            
+            # Thêm giá trị count trên thanh
+            for index, value in enumerate(filtered_data['count']):
+                ax.text(value, index, str(value), color='black', ha='left', va='center', fontsize=10)
+            
+            ax.set_title(f'Top 10 sản phẩm bán chạy trong năm {year_selected}', fontsize=16)
+            ax.set_xlabel('Số lượng bán được', fontsize=14)
+            ax.set_ylabel('Tên sản phẩm', fontsize=14)
+            ax.grid(axis='y', linestyle='--', alpha=0.7)
+            st.pyplot(fig)
+
+        elif view_option == 'Quý':
+            # Thống kê sản phẩm bán theo quý
+            product_sales = data.groupby(['year', 'quarter', 'ten_san_pham']).size().reset_index(name='count')
+            
+            # Lựa chọn năm và quý
+            year_selected = st.selectbox('Chọn năm:', sorted(data['year'].unique()))
+            quarter_selected = st.selectbox('Chọn quý:', sorted(data['quarter'].unique()))
+            
+            filtered_data = product_sales[(product_sales['year'] == year_selected) & 
+                                        (product_sales['quarter'] == quarter_selected)].nlargest(10, 'count')
+            
+            # Vẽ biểu đồ
+            fig, ax = plt.subplots(figsize=(10, 6))
+            sns.barplot(data=filtered_data, x='count', y='ten_san_pham', palette='tab10', ax=ax)
+            
+            # Thêm giá trị count trên thanh
+            for index, value in enumerate(filtered_data['count']):
+                ax.text(value, index, str(value), color='black', ha='left', va='center', fontsize=10)
+            
+            ax.set_title(f"Top 10 sản phẩm bán chạy trong Quý {quarter_selected}, {year_selected}", fontsize=16)
+            ax.set_xlabel("Số lượng bán được", fontsize=14)
+            ax.set_ylabel("Tên sản phẩm", fontsize=14)
+            ax.grid(axis='y', linestyle='--', alpha=0.7)
+            st.pyplot(fig)
+
+        # # Thống kê số lượng hàng bán theo quý
+        # sales_count_quarter = data.groupby('quarter').size().reset_index()
+        # sales_count_quarter.rename(columns={0: 'so_luong_sales_quy'}, inplace=True)
+        # st.write('### Thống kê số lượng hàng bán theo quý')
+        # # Tạo figure và axis
+        # fig, ax = plt.subplots(figsize=(12, 6))
+        # # Tạo biểu đồ lineplot
+        # sns.lineplot(
+        #     data=sales_count_quarter, 
+        #     x='quarter', 
+        #     y='so_luong_sales_quy', 
+        #     marker='o', 
+        #     label='Số lượng hàng bán theo quý', 
+        #     ax=ax
+        # )
+        # # Thêm giá trị trực tiếp lên biểu đồ
+        # for x, y in zip(sales_count_quarter['quarter'], sales_count_quarter['so_luong_sales_quy']):
+        #     ax.text(x, y, str(y), color='black', ha='center', va='bottom', fontsize=10)
+        # # Thiết lập tiêu đề và nhãn
+        # ax.set_title('Thống kê số lượng hàng bán theo quý', fontsize=16)
+        # ax.set_xlabel('Quý', fontsize=12)
+        # ax.set_ylabel('Số lượng hàng bán theo quý', fontsize=12)
+        # ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+        # ax.grid(True)
+        # ax.legend()
+        # # Hiển thị biểu đồ
+        # st.pyplot(fig)
 
 # Giao diện phần 'Thông tin về sản phẩm'
 if info_options == 'Thông tin về sản phẩm':
