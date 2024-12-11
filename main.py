@@ -1,4 +1,6 @@
+
 import streamlit as st
+st.set_page_config(page_title='Sentiment App', page_icon='img/ML_icon.png', layout="centered", initial_sidebar_state="auto", menu_items=None)
 import pandas as pd
 import numpy as np
 import pickle
@@ -117,187 +119,160 @@ if info_options == 'Tổng quan về dataset':
         st.warning('Dataset chưa được tải lên')
     else:
         data = st.session_state['uploaded_data']  # Lấy dữ liệu từ session_state
-        # Tạo đồ thị đếm số sao
-        st.write("### Phân bổ số sao đánh giá")
-        fig, ax = plt.subplots(figsize=(10, 6))  # Khởi tạo figure và axis cho Seaborn
-        sns.countplot(data=data, x='so_sao', hue='so_sao', palette='tab10', ax=ax)  # Tạo biểu đồ trên ax
-        # Thêm số count trên cột
-        for container in ax.containers: # type: ignore
-            ax.bar_label(container)
-        # Tùy chỉnh đồ thị
-        ax.set_xticklabels(ax.get_xticklabels(), rotation=90)  # Xoay nhãn trục X
-        ax.set_title('Số sao phân bổ')  # Tiêu đề
-        plt.tight_layout()  # Đảm bảo bố cục không bị cắt
-        # Hiển thị đồ thị trên Streamlit
-        st.pyplot(fig)
-        
-        # Số lượng các từ tích cực
-        st.write("### Số lượng các từ tích cực đã nhận xét")
-        # Tạo đồ thị
-        fig, ax = plt.subplots(figsize=(10, 6))  # Khởi tạo figure và axis
-        sns.countplot(data=data, x='positive_words_count', hue='positive_words_count', legend=False, palette='tab10', ax=ax)  # type: ignore # Tạo biểu đồ
-        # Thêm nhãn trên các cột
-        for container in ax.containers: # type: ignore
-            ax.bar_label(container)
-        # Tùy chỉnh đồ thị
-        ax.set_xticklabels(ax.get_xticklabels(), rotation=90)  # Xoay nhãn trục X
-        ax.set_title('Số lượng các từ tích cực đã nhận xét')  # Thêm tiêu đề
-        plt.tight_layout()  # Đảm bảo bố cục gọn gàng
-        # Hiển thị đồ thị trên Streamlit
-        st.pyplot(fig)
+        chart_tabs = st.tabs(['Truy suất sản phẩm bán được', 'Các thống kê khác'])
+        with chart_tabs[0]:
+            # Sử dụng groupby theo 'year' và đếm số sản phẩm theo 'year' bằng size()
+            # Tạo cột 'year' từ cột 'ngay_binh_luan'
+            data['year'] = data['ngay_binh_luan'].dt.year
+            product_count_yearly = data.groupby('year').size().reset_index()
+            product_count_yearly.rename(columns={0: 'ban_sp_theo_nam'}, inplace=True)
 
-        # Số lượng các từ tiêu cực
-        st.write('### Số lượng các từ tiêu cực đã nhận xét')
-        # Tạo đồ thị
-        fig, ax = plt.subplots(figsize=(10, 6))  # Khởi tạo figure và axis
-        sns.countplot(data=data, x='negative_words_count', hue='negative_words_count', legend=False, palette='tab10', ax=ax)  # type: ignore # Tạo biểu đồ
-        # Thêm nhãn trên các cột
-        for container in ax.containers: # type: ignore
-            ax.bar_label(container)
-        # Tùy chỉnh đồ thị
-        ax.set_xticklabels(ax.get_xticklabels(), rotation=90)  # Xoay nhãn trục X
-        ax.set_title('Số lượng các từ tiêu cực đã nhận xét')  # Thêm tiêu đề
-        plt.tight_layout()  # Đảm bảo bố cục gọn gàng
-        # Hiển thị đồ thị trên Streamlit
-        st.pyplot(fig)
+            # Vẽ biểu đồ lineplot thống kê số lượng sản phẩm bán ra theo năm
+            st.write('### Thống kê số lượng sản phẩm bán ra theo năm')
+            fig, ax = plt.subplots(figsize=(12, 6))
+            sns.lineplot(
+                data=product_count_yearly, 
+                x='year', 
+                y='ban_sp_theo_nam', 
+                marker='.', 
+                label='Số lượng sản phẩm bán ra theo năm', 
+                ax=ax
+            )
 
-        # Tần suất Positive/Negative
-        st.write('### Tần suất Positive/Negative trên tập dữ liệu')
-        # Tạo figure và axis
-        fig, ax = plt.subplots(figsize=(8, 5))
-        # Tạo biểu đồ countplot
-        sns.countplot(
-            data=data, 
-            x='sentiment', 
-            palette='tab10', 
-            ax=ax
-        )
-        # Thêm nhãn giá trị lên các cột
-        for container in ax.containers: # type: ignore
-            ax.bar_label(container)
-        # Thiết lập tiêu đề và xoay nhãn trục X
-        ax.set_title('Tần suất Positive/Negative trên tập dữ liệu', fontsize=14)
-        ax.set_xticklabels(ax.get_xticklabels(), rotation=0)
-        # Tự động căn chỉnh layout
-        plt.tight_layout()
-        # Hiển thị biểu đồ
-        st.pyplot(fig)
+            # Thêm giá trị trực tiếp lên biểu đồ
+            for x, y in zip(product_count_yearly['year'], product_count_yearly['ban_sp_theo_nam']):
+                ax.text(x, y, str(y), color='black', ha='center', va='bottom', fontsize=10)
 
-        # Sử dụng groupby theo 'year' và đếm số sản phẩm theo 'year' bằng size()
-        # Tạo cột 'year' từ cột 'ngay_binh_luan'
-        data['year'] = data['ngay_binh_luan'].dt.year
-        product_count_yearly = data.groupby('year').size().reset_index()
-        product_count_yearly.rename(columns={0: 'ban_sp_theo_nam'}, inplace=True)
+            # Thiết lập tiêu đề và nhãn
+            ax.set_title('Thống kê số lượng bán hàng theo năm', fontsize=16)
+            ax.set_xlabel('Năm', fontsize=12)
+            ax.set_ylabel('Số hàng bán theo năm', fontsize=12)
+            ax.grid(True)
+            ax.legend()
+            plt.xticks(rotation=90)
+            plt.tight_layout()
 
-        # Vẽ biểu đồ lineplot thống kê số lượng sản phẩm bán ra theo năm
-        st.write('### Thống kê số lượng sản phẩm bán ra theo năm')
-        fig, ax = plt.subplots(figsize=(12, 6))
-        sns.lineplot(
-            data=product_count_yearly, 
-            x='year', 
-            y='ban_sp_theo_nam', 
-            marker='.', 
-            label='Số lượng sản phẩm bán ra theo năm', 
-            ax=ax
-        )
-
-        # Thêm giá trị trực tiếp lên biểu đồ
-        for x, y in zip(product_count_yearly['year'], product_count_yearly['ban_sp_theo_nam']):
-            ax.text(x, y, str(y), color='black', ha='center', va='bottom', fontsize=10)
-
-        # Thiết lập tiêu đề và nhãn
-        ax.set_title('Thống kê số lượng bán hàng theo năm', fontsize=16)
-        ax.set_xlabel('Năm', fontsize=12)
-        ax.set_ylabel('Số hàng bán theo năm', fontsize=12)
-        ax.grid(True)
-        ax.legend()
-        plt.xticks(rotation=90)
-        plt.tight_layout()
-
-        # Hiển thị biểu đồ trong Streamlit
-        st.pyplot(fig)
-
-        # Chọn xem theo quý hoặc năm
-        st.write('### Thống kê số lượng sản phẩm bán ra theo quý-năm/năm')
-        # Tạo cột 'quý' và 'năm'
-        data['year'] = data['ngay_binh_luan'].dt.year
-        data['quarter'] = data['ngay_binh_luan'].dt.quarter 
-        view_option = st.selectbox('Xem số liệu theo:', ['Năm', 'Quý'])
-
-        if view_option == 'Năm':
-            # Thống kê sản phẩm bán theo năm
-            product_sales = data.groupby(['year', 'ten_san_pham']).size().reset_index(name='count')
-            
-            # Lọc top 10 sản phẩm
-            year_selected = st.selectbox('Chọn năm:', sorted(data['year'].unique()))
-            filtered_data = product_sales[product_sales['year'] == year_selected].nlargest(10, 'count')
-            
-            # Vẽ biểu đồ
-            fig, ax = plt.subplots(figsize=(10, 6))
-            sns.barplot(data=filtered_data, x='count', y='ten_san_pham', palette='tab10', ax=ax)
-            
-            # Thêm giá trị count trên thanh
-            for index, value in enumerate(filtered_data['count']):
-                ax.text(value, index, str(value), color='black', ha='left', va='center', fontsize=10)
-            
-            ax.set_title(f'Top 10 sản phẩm bán chạy trong năm {year_selected}', fontsize=16)
-            ax.set_xlabel('Số lượng bán được', fontsize=14)
-            ax.set_ylabel('Tên sản phẩm', fontsize=14)
-            ax.grid(axis='y', linestyle='--', alpha=0.7)
+            # Hiển thị biểu đồ trong Streamlit
             st.pyplot(fig)
 
-        elif view_option == 'Quý':
-            # Thống kê sản phẩm bán theo quý
-            product_sales = data.groupby(['year', 'quarter', 'ten_san_pham']).size().reset_index(name='count')
+            # Chọn xem theo quý hoặc năm
+            st.write('### Truy suất số lượng sản phẩm bán ra theo quý-năm/năm')
+            # Tạo cột 'quý' và 'năm'
+            data['year'] = data['ngay_binh_luan'].dt.year
+            data['quarter'] = data['ngay_binh_luan'].dt.quarter 
+            view_option = st.selectbox('Xem số liệu theo:', ['Năm', 'Quý'])
+
+            if view_option == 'Năm':
+                # Thống kê sản phẩm bán theo năm
+                product_sales = data.groupby(['year', 'ten_san_pham']).size().reset_index(name='count')
+                
+                # Lọc top 10 sản phẩm
+                year_selected = st.selectbox('Chọn năm:', sorted(data['year'].unique()))
+                filtered_data = product_sales[product_sales['year'] == year_selected].nlargest(10, 'count')
+                
+                # Vẽ biểu đồ
+                fig, ax = plt.subplots(figsize=(10, 6))
+                sns.barplot(data=filtered_data, x='count', y='ten_san_pham', palette='tab10', ax=ax)
+                
+                # Thêm giá trị count trên thanh
+                for index, value in enumerate(filtered_data['count']):
+                    ax.text(value, index, str(value), color='black', ha='left', va='center', fontsize=20)
+                
+                ax.set_title(f'Top 10 sản phẩm bán chạy trong năm {year_selected}', fontsize=16)
+                ax.set_xlabel('Số lượng bán được', fontsize=18)
+                ax.set_ylabel('Tên sản phẩm', fontsize=18)
+                st.pyplot(fig)
+
+            elif view_option == 'Quý':
+                # Thống kê sản phẩm bán theo quý
+                product_sales = data.groupby(['year', 'quarter', 'ten_san_pham']).size().reset_index(name='count')
+                
+                # Lựa chọn năm và quý
+                year_selected = st.selectbox('Chọn năm:', sorted(data['year'].unique()))
+                quarter_selected = st.selectbox('Chọn quý:', sorted(data['quarter'].unique()))
+                
+                filtered_data = product_sales[(product_sales['year'] == year_selected) & 
+                                            (product_sales['quarter'] == quarter_selected)].nlargest(10, 'count')
+                
+                # Vẽ biểu đồ
+                fig, ax = plt.subplots(figsize=(10, 6))
+                sns.barplot(data=filtered_data, x='count', y='ten_san_pham', palette='tab10', ax=ax)
+                
+                # Thêm giá trị count trên thanh
+                for index, value in enumerate(filtered_data['count']):
+                    ax.text(value, index, str(value), color='black', ha='left', va='center', fontsize=20)
+                
+                ax.set_title(f"Top 10 sản phẩm bán chạy trong Quý {quarter_selected}, {year_selected}", fontsize=16)
+                ax.set_xlabel("Số lượng bán được", fontsize=14)
+                ax.set_ylabel("Tên sản phẩm", fontsize=14)
+                st.pyplot(fig)
+
+        with chart_tabs[1]:
+            # Tạo đồ thị đếm số sao
+            st.write("### Phân bổ số sao đánh giá")
+            fig, ax = plt.subplots(figsize=(10, 6))  # Khởi tạo figure và axis cho Seaborn
+            sns.countplot(data=data, x='so_sao', hue='so_sao', palette='tab10', ax=ax)  # Tạo biểu đồ trên ax
+            # Thêm số count trên cột
+            for container in ax.containers: # type: ignore
+                ax.bar_label(container)
+            # Tùy chỉnh đồ thị
+            ax.set_xticklabels(ax.get_xticklabels(), rotation=90)  # Xoay nhãn trục X
+            ax.set_title('Số sao phân bổ')  # Tiêu đề
+            plt.tight_layout()  # Đảm bảo bố cục không bị cắt
+            # Hiển thị đồ thị trên Streamlit
+            st.pyplot(fig)
             
-            # Lựa chọn năm và quý
-            year_selected = st.selectbox('Chọn năm:', sorted(data['year'].unique()))
-            quarter_selected = st.selectbox('Chọn quý:', sorted(data['quarter'].unique()))
-            
-            filtered_data = product_sales[(product_sales['year'] == year_selected) & 
-                                        (product_sales['quarter'] == quarter_selected)].nlargest(10, 'count')
-            
-            # Vẽ biểu đồ
-            fig, ax = plt.subplots(figsize=(10, 6))
-            sns.barplot(data=filtered_data, x='count', y='ten_san_pham', palette='tab10', ax=ax)
-            
-            # Thêm giá trị count trên thanh
-            for index, value in enumerate(filtered_data['count']):
-                ax.text(value, index, str(value), color='black', ha='left', va='center', fontsize=10)
-            
-            ax.set_title(f"Top 10 sản phẩm bán chạy trong Quý {quarter_selected}, {year_selected}", fontsize=16)
-            ax.set_xlabel("Số lượng bán được", fontsize=14)
-            ax.set_ylabel("Tên sản phẩm", fontsize=14)
-            ax.grid(axis='y', linestyle='--', alpha=0.7)
+            # Số lượng các từ tích cực
+            st.write("### Số lượng các từ tích cực đã nhận xét")
+            # Tạo đồ thị
+            fig, ax = plt.subplots(figsize=(10, 6))  # Khởi tạo figure và axis
+            sns.countplot(data=data, x='positive_words_count', hue='positive_words_count', legend=False, palette='tab10', ax=ax)  # type: ignore # Tạo biểu đồ
+            # Thêm nhãn trên các cột
+            for container in ax.containers: # type: ignore
+                ax.bar_label(container)
+            # Tùy chỉnh đồ thị
+            ax.set_xticklabels(ax.get_xticklabels(), rotation=90)  # Xoay nhãn trục X
+            ax.set_title('Số lượng các từ tích cực đã nhận xét')  # Thêm tiêu đề
+            plt.tight_layout()  # Đảm bảo bố cục gọn gàng
+            # Hiển thị đồ thị trên Streamlit
             st.pyplot(fig)
 
-        # # Thống kê số lượng hàng bán theo quý
-        # sales_count_quarter = data.groupby('quarter').size().reset_index()
-        # sales_count_quarter.rename(columns={0: 'so_luong_sales_quy'}, inplace=True)
-        # st.write('### Thống kê số lượng hàng bán theo quý')
-        # # Tạo figure và axis
-        # fig, ax = plt.subplots(figsize=(12, 6))
-        # # Tạo biểu đồ lineplot
-        # sns.lineplot(
-        #     data=sales_count_quarter, 
-        #     x='quarter', 
-        #     y='so_luong_sales_quy', 
-        #     marker='o', 
-        #     label='Số lượng hàng bán theo quý', 
-        #     ax=ax
-        # )
-        # # Thêm giá trị trực tiếp lên biểu đồ
-        # for x, y in zip(sales_count_quarter['quarter'], sales_count_quarter['so_luong_sales_quy']):
-        #     ax.text(x, y, str(y), color='black', ha='center', va='bottom', fontsize=10)
-        # # Thiết lập tiêu đề và nhãn
-        # ax.set_title('Thống kê số lượng hàng bán theo quý', fontsize=16)
-        # ax.set_xlabel('Quý', fontsize=12)
-        # ax.set_ylabel('Số lượng hàng bán theo quý', fontsize=12)
-        # ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
-        # ax.grid(True)
-        # ax.legend()
-        # # Hiển thị biểu đồ
-        # st.pyplot(fig)
+            # Số lượng các từ tiêu cực
+            st.write('### Số lượng các từ tiêu cực đã nhận xét')
+            # Tạo đồ thị
+            fig, ax = plt.subplots(figsize=(10, 6))  # Khởi tạo figure và axis
+            sns.countplot(data=data, x='negative_words_count', hue='negative_words_count', legend=False, palette='tab10', ax=ax)  # type: ignore # Tạo biểu đồ
+            # Thêm nhãn trên các cột
+            for container in ax.containers: # type: ignore
+                ax.bar_label(container)
+            # Tùy chỉnh đồ thị
+            ax.set_xticklabels(ax.get_xticklabels(), rotation=90)  # Xoay nhãn trục X
+            ax.set_title('Số lượng các từ tiêu cực đã nhận xét')  # Thêm tiêu đề
+            plt.tight_layout()  # Đảm bảo bố cục gọn gàng
+            # Hiển thị đồ thị trên Streamlit
+            st.pyplot(fig)
+
+            # Tần suất Positive/Negative
+            st.write('### Tần suất Positive/Negative trên tập dữ liệu')
+            # Tạo figure và axis
+            fig, ax = plt.subplots(figsize=(8, 5))
+            # Tạo biểu đồ countplot
+            sns.countplot(
+                data=data, 
+                x='sentiment', 
+                palette='tab10', 
+                ax=ax
+            )
+            # Thêm nhãn giá trị lên các cột
+            for container in ax.containers: # type: ignore
+                ax.bar_label(container)
+            # Thiết lập tiêu đề và xoay nhãn trục X
+            ax.set_title('Tần suất Positive/Negative trên tập dữ liệu', fontsize=14)
+            ax.set_xticklabels(ax.get_xticklabels(), rotation=0)
+            # Tự động căn chỉnh layout
+            plt.tight_layout()
+            # Hiển thị biểu đồ
+            st.pyplot(fig)
 
 # Giao diện phần 'Thông tin về sản phẩm'
 if info_options == 'Thông tin về sản phẩm':
@@ -372,13 +347,6 @@ if info_options == 'Thông tin về sản phẩm':
                     st.pyplot(fig)
                 # Tabs chính
                 info_tabs = st.tabs(['Thông tin sản phẩm', 'Đánh giá từ khách hàng', 'Wordcloud'])
-                # with info_tabs[0]:
-                #     xem_tiep = st.checkbox('Xem tiếp...')
-                #     product_description = product_description.replace('1.', '\n').replace('THÔNG TIN SẢN PHẨM','\n').replace('Làm sao để phân biệt hàng có trộn hay không ?\nHàng trộn sẽ không thể xuất hoá đơn đỏ (VAT) 100% được do có hàng không nguồn gốc trong đó.\nTại Hasaki, 100% hàng bán ra sẽ được xuất hoá đơn đỏ cho dù khách hàng có lấy hay không. Nếu có nhu cầu lấy hoá đơn đỏ, quý khách vui lòng lấy trước 22h cùng ngày. Vì sau 22h, hệ thống Hasaki sẽ tự động xuất hết hoá đơn cho những hàng hoá mà khách hàng không đăng kí lấy hoá đơn.\nDo xuất được hoá đơn đỏ 100% nên đảm bảo 100% hàng tại Hasaki là hàng chính hãng có nguồn gốc rõ ràng.','\n')
-                #     if xem_tiep is True:
-                #         st.write(product_description)
-                #     else:
-                #         st.write(product_description[:350]+'...')
                 # Quản lý trạng thái hiển thị nội dung bằng session_state
                 if "show_full_description" not in st.session_state:
                     st.session_state.show_full_description = False  # Ban đầu thu gọn
@@ -488,7 +456,8 @@ if info_options == 'Thông tin về sản phẩm':
                                 max_words=25,
                                 background_color='white',
                                 colormap='Oranges',
-                                collocations=False
+                                collocations=False,
+                                stopwords={'không_nóng', 'không_cay', 'không_da', 'không_rát'}
                             ).generate(negative_bowl)
 
                             # Hiển thị negative WordCloud trong Streamlit
@@ -599,6 +568,7 @@ if info_options == 'Dự báo thái độ cho comment':
     data = st.session_state['uploaded_data']  # Lấy dữ liệu từ session_state
     st.write('Nhập một comment để kiểm tra sentiment')
     user_input = st.text_area('Nhập comment:')
+    st.image('img/semtiment_analysis.png', width=320)
     if st.button('Dự đoán'):
         if user_input == '':
             st.warning('Mời bạn nhập nội dung bình luận!')
