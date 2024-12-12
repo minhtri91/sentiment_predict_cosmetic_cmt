@@ -7,6 +7,6 @@ scikit-learn==1.5.1
 underthesea==6.8.4
 pyvi==0.1.1
 wordcloud==1.9.3
-streamlit_option_menu
-streamlit_extras
+streamlit-option-menu==0.4.0
+streamlit-extras==0.5.0
 streamlit-elements==0.1.0
