@@ -1,4 +1,3 @@
-
 import streamlit as st
 st.set_page_config(page_title='Sentiment App', page_icon='img/ML_icon.png', layout="centered", initial_sidebar_state="auto", menu_items=None)
 import pandas as pd
@@ -16,6 +15,10 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 from collections import Counter
 from wordcloud import WordCloud as wc
 label_encoder = LabelEncoder()
+from streamlit_option_menu import option_menu
+from streamlit_extras.stylable_container import stylable_container 
+from streamlit_elements import elements, mui, dashboard
+#-------------------------------------------------------------------------#
 
 # Load các emoji biểu cảm thường gặp
 emoji_dict = tpr.load_emojicon(file_path='files/emojicon.txt')
@@ -27,6 +30,7 @@ wrong_lst = tpr.load_words(file_path='files/wrong-word.txt')
 positive_words_lst: list = tpr.load_words(file_path='files/hasaki_positive_words.txt')
 # Nạp các từ ngữ tiêu cực sau khi đã xử lý bằng tay
 negative_words_lst: list = tpr.load_words(file_path='files/hasaki_negative_words.txt')
+#-------------------------------------------------------------------------#
 
 # Load model và TF-IDF vectorizer
 @st.cache_resource
@@ -42,18 +46,41 @@ def convert_df_to_csv(df):
 
 # Load model và tfidf
 proj1_sentiment_lgr_model, proj1_tfidf_vectorizer = load_model_and_tfidf()
+#-------------------------------------------------------------------------#
 
 # Giao diện phần 'Tải dữ liệu lên hệ thống'
 st.sidebar.write('# :briefcase: Đồ án tốt nghiệp K299')
 st.sidebar.write('### :scroll: Project 1: Sentiment Analysis')
-st.sidebar.title('Menu:')
-info_options = st.sidebar.radio(
-    ':gear: Các chức năng:', 
-    options=['Tổng quan về hệ thống', 'Tải dữ liệu lên hệ thống', 'Tổng quan về dataset', 'Thông tin về sản phẩm', 'Dự báo thái độ cho dataset', 'Dự báo thái độ cho comment']
-)
 st.sidebar.write('-'*3)
 st.sidebar.write('### :left_speech_bubble: Giảng viên hướng dẫn:')
 st.sidebar.write('### :female-teacher: Thạc Sỹ Khuất Thùy Phương')
+st.sidebar.write('-'*3)
+# info_options = st.sidebar.radio(
+#     ':gear: Các chức năng:', 
+#     options=['Tổng quan về hệ thống', 'Tải dữ liệu lên hệ thống', 'Tổng quan về dataset', 'Thông tin về sản phẩm', 'Dự báo thái độ cho dataset', 'Dự báo thái độ cho comment']
+# )
+with st.sidebar:
+    info_options = option_menu(
+        'MENU', ['Tổng quan về hệ thống', 
+                 'Tải dữ liệu lên hệ thống',
+                 'Tổng quan về dataset',
+                 'Thông tin về sản phẩm',
+                 'Dự báo thái độ cho dataset',
+                 'Dự báo thái độ cho comment'], 
+        icons=['gear', 
+               'cloud-upload-fill',
+               'info-circle',
+               'list-task',
+               'people',
+               'body-text'], 
+        menu_icon='menu-button-wide',
+        styles={
+        'container': {'padding': '0!important', 'background-color': '0'},
+        'icon': {'color': 'orange', 'font-size': '15px'}, 
+        'nav-link': {'font-size': '15px', 'text-align': 'left', 'margin':'0px', '--hover-color': '#B0C4DE', 'font-family': 'Tahoma, sans-serif'},
+        'nav-link-selected': {'background-color': '#708090', 'font-family': 'Tahoma, serif',}
+    },
+        default_index=0)
 st.sidebar.write('-'*3)
 st.sidebar.write('#### Nhóm cùng thực hiện:')
 st.sidebar.write(' :boy: Nguyễn Minh Trí')
@@ -62,6 +89,7 @@ st.sidebar.write(' :boy: Phan Trần Minh Khuê')
 st.sidebar.write('-'*3)
 st.sidebar.write('#### :clock830: Thời gian báo cáo:')
 st.sidebar.write(':spiral_calendar_pad: 14/12/2024')
+#-------------------------------------------------------------------------#
 
 ## Kiểm tra dữ liệu đã upload trước đó
 if 'uploaded_data' not in st.session_state:
@@ -86,6 +114,7 @@ if info_options == 'Tổng quan về hệ thống':
 - Xác định và trích xuất các thông tin hữu ích từ khách hàng về mức độ quan tâm, hài lòng của KH đối với sản phẩm, dịch vụ của doanh nghiệp từ đó doanh nghiệp có thể điều chỉnh chiến lược Kinh doanh, Marketing, và các dịch vụ phù hợp với khách hàng hơn.
 - Phân tích đối thủ cạnh tranh, để hiểu cách khách hàng cảm nhận về các sản phẩm hoặc dịch vụ của đối thủ.''')
         st.image('img/Gioi_thieu_proj1.PNG', use_column_width=True)
+#-------------------------------------------------------------------------#
 
 ## Xem dữ liệu đã upload lên, đưa dữ liệu vào session để sử dụng lại được
 if info_options == 'Tải dữ liệu lên hệ thống':
@@ -112,6 +141,8 @@ if info_options == 'Tải dữ liệu lên hệ thống':
         data = st.session_state['uploaded_data']  # Lấy dữ liệu từ session_state
         st.dataframe(data[['ma_khach_hang', 'ho_ten', 'ma_san_pham', 'ten_san_pham', 'mo_ta', 'diem_trung_binh', 'so_sao', 'noi_dung_binh_luan', 'ngay_binh_luan', 'gia_ban']].head(5))
         st.dataframe(data[['ma_khach_hang', 'ho_ten', 'ma_san_pham', 'ten_san_pham', 'mo_ta', 'diem_trung_binh', 'so_sao', 'noi_dung_binh_luan', 'ngay_binh_luan', 'gia_ban']].tail(5))
+#-------------------------------------------------------------------------#
+
 # Giao diện phần 'Tổng quan về dataset'
 if info_options == 'Tổng quan về dataset':
     st.image('img/hasaki_logo.png', use_column_width=True)
@@ -151,8 +182,6 @@ if info_options == 'Tổng quan về dataset':
             ax.legend()
             plt.xticks(rotation=90)
             plt.tight_layout()
-
-            # Hiển thị biểu đồ trong Streamlit
             st.pyplot(fig)
 
             # Chọn xem theo quý hoặc năm
@@ -219,7 +248,6 @@ if info_options == 'Tổng quan về dataset':
             ax.set_xticklabels(ax.get_xticklabels(), rotation=90)  # Xoay nhãn trục X
             ax.set_title('Số sao phân bổ')  # Tiêu đề
             plt.tight_layout()  # Đảm bảo bố cục không bị cắt
-            # Hiển thị đồ thị trên Streamlit
             st.pyplot(fig)
             
             # Số lượng các từ tích cực
@@ -234,7 +262,6 @@ if info_options == 'Tổng quan về dataset':
             ax.set_xticklabels(ax.get_xticklabels(), rotation=90)  # Xoay nhãn trục X
             ax.set_title('Số lượng các từ tích cực đã nhận xét')  # Thêm tiêu đề
             plt.tight_layout()  # Đảm bảo bố cục gọn gàng
-            # Hiển thị đồ thị trên Streamlit
             st.pyplot(fig)
 
             # Số lượng các từ tiêu cực
@@ -249,7 +276,6 @@ if info_options == 'Tổng quan về dataset':
             ax.set_xticklabels(ax.get_xticklabels(), rotation=90)  # Xoay nhãn trục X
             ax.set_title('Số lượng các từ tiêu cực đã nhận xét')  # Thêm tiêu đề
             plt.tight_layout()  # Đảm bảo bố cục gọn gàng
-            # Hiển thị đồ thị trên Streamlit
             st.pyplot(fig)
 
             # Tần suất Positive/Negative
@@ -271,8 +297,8 @@ if info_options == 'Tổng quan về dataset':
             ax.set_xticklabels(ax.get_xticklabels(), rotation=0)
             # Tự động căn chỉnh layout
             plt.tight_layout()
-            # Hiển thị biểu đồ
             st.pyplot(fig)
+#-------------------------------------------------------------------------#
 
 # Giao diện phần 'Thông tin về sản phẩm'
 if info_options == 'Thông tin về sản phẩm':
@@ -296,7 +322,7 @@ if info_options == 'Thông tin về sản phẩm':
         # Tạo một tuple cho mỗi sản phẩm, trong đó phần tử đầu là tên và phần tử thứ hai là ID
         product_options = [(row['ten_san_pham'], row['ma_san_pham']) for index, row in st.session_state.random_products.iterrows()]
 
-        # Tạo một dropdown với options là các tuple này
+        # Tạo một dropdown với options là tên các sản phẩm
         selected_product = st.selectbox(
             'Chọn sản phẩm',
             options=product_options,
@@ -305,7 +331,7 @@ if info_options == 'Thông tin về sản phẩm':
         # # Display the selected product
         # st.write("Bạn đã chọn:", selected_product)
         
-        # Cập nhật session_state dựa trên lựa chọn hiện tại
+        # Cập nhật session_state mã sản phẩm dựa trên lựa chọn tên sản phẩm hiện tại
         st.session_state.selected_ma_san_pham = selected_product[1] # type: ignore
 
         if st.session_state.selected_ma_san_pham:
@@ -316,7 +342,7 @@ if info_options == 'Thông tin về sản phẩm':
             if not selected_product.empty:
                 st.write('-'*3)
                 st.write(f'#### {selected_product["ten_san_pham"].values[0]}')
-                col1, col2 = st.columns([2,4.5])
+                col1, col2 = st.columns([2.5,4.5])
                 with col1:
                     st.write(f'##### {selected_product["diem_trung_binh"].values[0]} :star:', '{:,.0f}'.format(selected_product["gia_ban"].values[0]),'VNĐ')
                     product_description = selected_product['mo_ta'].values[0]
@@ -345,6 +371,7 @@ if info_options == 'Thông tin về sản phẩm':
                     plt.tight_layout()
                     # Hiển thị biểu đồ
                     st.pyplot(fig)
+                    
                 # Tabs chính
                 info_tabs = st.tabs(['Thông tin sản phẩm', 'Đánh giá từ khách hàng', 'Wordcloud'])
                 # Quản lý trạng thái hiển thị nội dung bằng session_state
@@ -371,29 +398,60 @@ if info_options == 'Thông tin về sản phẩm':
                 # Đảm bảo cập nhật trạng thái ngay lập tức
                 if st.session_state.button_clicked:
                     st.session_state.button_clicked = False
-                    st._rerun()
+                    st.rerun()
+#-------------------------------------------------------------------------#
+
                 with info_tabs[1]:
-                    # for i in range(len(selected_product["noi_dung_binh_luan"])):
-                    #     st.write(f'{selected_product["ngay_binh_luan"].dt.strftime("%d-%m-%Y").values[i]}, {selected_product["ho_ten"].values[i]}, {selected_product["so_sao"].values[i]*":star:"}')
-                    #     st.write(f'{selected_product["noi_dung_binh_luan"].values[i]}')
-                    #     st.write('-'*3)
+                    # Kiểm tra và lưu trạng thái sản phẩm đã chọn
+                    if 'selected_product_name' not in st.session_state:
+                        st.session_state.selected_product_name = None
+                    if 'comments_to_show' not in st.session_state:
+                        st.session_state.comments_to_show = 5
+
+                    # Khi sản phẩm thay đổi, reset số lượng bình luận hiển thị
+                    current_product_name = selected_product['ten_san_pham'].iloc[0]  # Giả sử có cột 'ten_san_pham' để nhận diện sản phẩm
+                    if st.session_state.selected_product_name != current_product_name:
+                        st.session_state.comments_to_show = 5
+                        st.session_state.selected_product_name = current_product_name
+
                     # Lọc số sao đánh giá
                     # Tạo danh sách unique số sao từ dữ liệu
-                    star_ratings = sorted(selected_product["so_sao"].unique())
+                    star_ratings = sorted(selected_product['so_sao'].unique())
                     # Tạo selectbox để chọn số sao
-                    selected_star = st.selectbox("Chọn số sao để lọc bình luận:", options=["Tất cả"] + star_ratings)
+                    selected_star = st.selectbox('Chọn số sao để lọc bình luận:', options=['Tất cả'] + star_ratings)
 
                     # Lọc dữ liệu dựa trên số sao đã chọn
-                    if selected_star != "Tất cả":
-                        filtered_reviews = selected_product[selected_product["so_sao"] == selected_star]
+                    if selected_star != 'Tất cả':
+                        filtered_reviews = selected_product[selected_product['so_sao'] == selected_star]
                     else:
                         filtered_reviews = selected_product
 
-                    # Hiển thị các bình luận đã được lọc
-                    for i in range(len(filtered_reviews)):
-                        st.write(f'{filtered_reviews["ngay_binh_luan"].dt.strftime("%d-%m-%Y").values[i]}, {filtered_reviews["ho_ten"].values[i]}, {filtered_reviews["so_sao"].values[i] * ":star:"}')
-                        st.write(f'{filtered_reviews["noi_dung_binh_luan"].values[i]}')
-                        st.write('-' * 3)
+                    # Sắp xếp bình luận theo ngày mới nhất
+                    filtered_reviews = filtered_reviews.sort_values('ngay_binh_luan', ascending=False)
+
+                    # Hiển thị các bình luận theo giới hạn hiện tại
+                    reviews_to_display = filtered_reviews.head(st.session_state.comments_to_show)
+                    nums_reviews = len(reviews_to_display)
+                    # Định nghĩa chức năng in ra comment
+                    def print_comments(index):
+                        with st.container(border=True):
+                            st.write(
+                                f'{reviews_to_display["ngay_binh_luan"].dt.strftime("%d-%m-%Y").values[i]},'
+                                f'{reviews_to_display["ho_ten"].values[i]}, '
+                                f'{reviews_to_display["so_sao"].values[i] * ":star:"}'
+                            )
+                            st.write(f'{reviews_to_display["noi_dung_binh_luan"].values[i]}')
+
+                    for i in range(nums_reviews):
+                        print_comments(i)
+                    st.session_state.comments_to_show += 3
+                    # Kiểm tra nếu còn bình luận để hiển thị
+                    if len(filtered_reviews) > st.session_state.comments_to_show:
+                        if st.button('Xem thêm...'):
+                            pass
+                    else:
+                        st.info('Sản phẩm không còn thêm bình luận nào mới.')
+
                 with info_tabs[2]:
                     filtered_product = selected_product.groupby('ma_san_pham')['processed_noi_dung_binh_luan'].apply(' '.join).reset_index()
                     filtered_product.rename(columns={"processed_noi_dung_binh_luan": "merged_comments"}, inplace=True)
@@ -430,7 +488,7 @@ if info_options == 'Thông tin về sản phẩm':
                             # Hiển thị positive WordCloud trong Streamlit
                             fig, ax = plt.subplots(figsize=(10, 6))
                             ax.imshow(positive_wordcloud, interpolation='bilinear')
-                            ax.axis("off")
+                            ax.axis('off')
                             st.pyplot(fig)
                     with col2:
                         st.write('##### Wordcloud tiêu cực')
@@ -457,16 +515,19 @@ if info_options == 'Thông tin về sản phẩm':
                                 background_color='white',
                                 colormap='Oranges',
                                 collocations=False,
-                                stopwords={'không_nóng', 'không_cay', 'không_da', 'không_rát'}
+                                stopwords={'không_nóng', 'không_cay', 'không_da', 
+                                           'không_rát', 'không', 'vô_cùng', 'mắt', 
+                                           'không_buồn', 'không_bết', 'không_mụn_viêm'}
                             ).generate(negative_bowl)
 
                             # Hiển thị negative WordCloud trong Streamlit
                             fig, ax = plt.subplots(figsize=(10, 6))
                             ax.imshow(negative_wordcloud, interpolation='bilinear')
-                            ax.axis("off")
+                            ax.axis('off')
                             st.pyplot(fig)
         else:
-            st.write(f"Không tìm thấy sản phẩm với ID: {st.session_state.selected_ma_san_pham}")
+            st.write(f'Không tìm thấy sản phẩm với ID: {st.session_state.selected_ma_san_pham}')
+#-------------------------------------------------------------------------#
         
 if info_options == 'Dự báo thái độ cho dataset':
     st.image('img/hasaki_logo.png', use_column_width=True)
@@ -558,6 +619,7 @@ if info_options == 'Dự báo thái độ cho dataset':
                 st.pyplot(fig)
             else:
                 st.warning('Vui lòng thực hiện dự đoán trước trong tab "Dự đoán".')
+#-------------------------------------------------------------------------#
 
 if info_options == 'Dự báo thái độ cho comment':
     st.image('img/hasaki_logo.png', use_column_width=True)
@@ -568,7 +630,7 @@ if info_options == 'Dự báo thái độ cho comment':
     data = st.session_state['uploaded_data']  # Lấy dữ liệu từ session_state
     st.write('Nhập một comment để kiểm tra sentiment')
     user_input = st.text_area('Nhập comment:')
-    st.image('img/semtiment_analysis.png', width=320)
+    st.image('img/semtiment_analysis.png', width=480)
     if st.button('Dự đoán'):
         if user_input == '':
             st.warning('Mời bạn nhập nội dung bình luận!')
