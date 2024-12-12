@@ -134,13 +134,17 @@ if info_options == 'Tải dữ liệu lên hệ thống':
             st.session_state['uploaded_data'] = data
             st.write('-'*3)
             st.success('Dữ liệu đã được tải lên!')
+            st.write('### 5 dòng thông tin đầu tiên')
             st.dataframe(data[['ma_khach_hang', 'ho_ten', 'ma_san_pham', 'ten_san_pham', 'mo_ta', 'diem_trung_binh', 'so_sao', 'noi_dung_binh_luan', 'ngay_binh_luan', 'gia_ban']].head(5))
+            st.write('### 5 dòng thông tin cuối cùng')
             st.dataframe(data[['ma_khach_hang', 'ho_ten', 'ma_san_pham', 'ten_san_pham', 'mo_ta', 'diem_trung_binh', 'so_sao', 'noi_dung_binh_luan', 'ngay_binh_luan', 'gia_ban']].tail(5))  
     else:
         st.info('Dữ liệu đã được tải lên trước đó.')
         data = st.session_state['uploaded_data']  # Lấy dữ liệu từ session_state
+        st.write('### 5 dòng thông tin đầu tiên')
         st.dataframe(data[['ma_khach_hang', 'ho_ten', 'ma_san_pham', 'ten_san_pham', 'mo_ta', 'diem_trung_binh', 'so_sao', 'noi_dung_binh_luan', 'ngay_binh_luan', 'gia_ban']].head(5))
-        st.dataframe(data[['ma_khach_hang', 'ho_ten', 'ma_san_pham', 'ten_san_pham', 'mo_ta', 'diem_trung_binh', 'so_sao', 'noi_dung_binh_luan', 'ngay_binh_luan', 'gia_ban']].tail(5))
+        st.write('### 5 dòng thông tin cuối cùng')
+        st.dataframe(data[['ma_khach_hang', 'ho_ten', 'ma_san_pham', 'ten_san_pham', 'mo_ta', 'diem_trung_binh', 'so_sao', 'noi_dung_binh_luan', 'ngay_binh_luan', 'gia_ban']].tail(5))  
 #-------------------------------------------------------------------------#
 
 # Giao diện phần 'Tổng quan về dataset'
